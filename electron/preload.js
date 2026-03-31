@@ -14,6 +14,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
   mediaPrevious: () => ipcRenderer.invoke('media-previous'),
   getMediaState: () => ipcRenderer.invoke('get-media-state'),
 
+  // ---- Open source app (Spotify, Apple Music, etc.) ----
+  openSourceApp: (sourceId) => ipcRenderer.invoke('open-source-app', sourceId),
+
   // ---- Calendar ----
   getCalendarEvents: () => ipcRenderer.invoke('get-calendar-events'),
 
@@ -21,7 +24,6 @@ contextBridge.exposeInMainWorld('electronAPI', {
   onMediaUpdate: (callback) => {
     const handler = (_event, data) => callback(data);
     ipcRenderer.on('media-update', handler);
-    // Return unsubscribe function for cleanup
     return () => ipcRenderer.removeListener('media-update', handler);
   },
   onCalendarUpdate: (callback) => {

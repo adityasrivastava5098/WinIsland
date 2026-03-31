@@ -1,104 +1,163 @@
 // ============================================================
-// Calendar Widget — Expanded View
-// Shows upcoming calendar events with time remaining,
-// styled for the Dynamic Island expanded state.
+// Calendar Widget — Monthly Grid View (Redesigned)
+// Shows a mini monthly calendar grid with:
+//   - Current month/year header with nav arrows
+//   - Day-of-week headers
+//   - Date grid with current day highlighted
+//   - Event indicators on event days
+// Only shown when user explicitly switches to calendar mode.
 // ============================================================
 
-import React from 'react';
+import React, { useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
 
-function CalendarWidget({ events }) {
-  if (!events || events.length === 0) {
-    return (
-      <div className="calendar-widget calendar-empty">
-        <div className="calendar-empty-icon">
-          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-            <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
-            <line x1="16" y1="2" x2="16" y2="6" />
-            <line x1="8" y1="2" x2="8" y2="6" />
-            <line x1="3" y1="10" x2="21" y2="10" />
-          </svg>
-        </div>
-        <span className="calendar-empty-text">No upcoming events</span>
-      </div>
-    );
-  }
+const DAYS = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
+const MONTHS = [
+  'January', 'February', 'March', 'April', 'May', 'June',
+  'July', 'August', 'September', 'October', 'November', 'December',
+];
 
-  // Show at most 3 events in the expanded view
-  const visibleEvents = events.slice(0, 3);
+function CalendarWidget({ events = [] }) {
+  const today = new Date();
+  const [viewMonth, setViewMonth] = useState(today.getMonth());
+  const [viewYear, setViewYear] = useState(today.getFullYear());
+  const [selectedDay, setSelectedDay] = useState(today.getDate());
+
+  // Build the calendar grid for the current month
+  const grid = useMemo(() => {
+    const firstDay = new Date(viewYear, viewMonth, 1).getDay();
+    const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
+    const cells = [];
+
+    // Empty cells before the 1st
+    for (let i = 0; i < firstDay; i++) {
+      cells.push(null);
+    }
+    // Day cells
+    for (let d = 1; d <= daysInMonth; d++) {
+      cells.push(d);
+    }
+    return cells;
+  }, [viewMonth, viewYear]);
+
+  // Determine which days have events
+  const eventDays = useMemo(() => {
+    const days = new Set();
+    for (const ev of events) {
+      try {
+        const d = new Date(ev.start);
+        if (d.getMonth() === viewMonth && d.getFullYear() === viewYear) {
+          days.add(d.getDate());
+        }
+      } catch { /* skip invalid */ }
+    }
+    return days;
+  }, [events, viewMonth, viewYear]);
+
+  // Events for the selected day
+  const selectedEvents = useMemo(() => {
+    return events.filter((ev) => {
+      try {
+        const d = new Date(ev.start);
+        return d.getDate() === selectedDay &&
+               d.getMonth() === viewMonth &&
+               d.getFullYear() === viewYear;
+      } catch { return false; }
+    });
+  }, [events, selectedDay, viewMonth, viewYear]);
+
+  const isToday = (day) => {
+    return day === today.getDate() &&
+           viewMonth === today.getMonth() &&
+           viewYear === today.getFullYear();
+  };
+
+  const prevMonth = (e) => {
+    e.stopPropagation();
+    if (viewMonth === 0) {
+      setViewMonth(11);
+      setViewYear((y) => y - 1);
+    } else {
+      setViewMonth((m) => m - 1);
+    }
+  };
+
+  const nextMonth = (e) => {
+    e.stopPropagation();
+    if (viewMonth === 11) {
+      setViewMonth(0);
+      setViewYear((y) => y + 1);
+    } else {
+      setViewMonth((m) => m + 1);
+    }
+  };
 
   return (
-    <div className="calendar-widget">
-      <div className="calendar-header">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <rect x="3" y="4" width="18" height="18" rx="2" />
-          <line x1="16" y1="2" x2="16" y2="6" />
-          <line x1="8" y1="2" x2="8" y2="6" />
-          <line x1="3" y1="10" x2="21" y2="10" />
-        </svg>
-        <span>Upcoming</span>
+    <div className="calendar-widget" onClick={(e) => e.stopPropagation()}>
+      {/* Month/year header */}
+      <div className="cal-header">
+        <button className="cal-nav-btn" onClick={prevMonth}>
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+            <polyline points="15 18 9 12 15 6" />
+          </svg>
+        </button>
+        <span className="cal-month-label">
+          {MONTHS[viewMonth]} {viewYear}
+        </span>
+        <button className="cal-nav-btn" onClick={nextMonth}>
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+            <polyline points="9 18 15 12 9 6" />
+          </svg>
+        </button>
       </div>
 
-      <div className="calendar-list">
-        {visibleEvents.map((event, i) => (
+      {/* Day-of-week headers */}
+      <div className="cal-day-headers">
+        {DAYS.map((d) => (
+          <span key={d} className="cal-day-header">{d}</span>
+        ))}
+      </div>
+
+      {/* Date grid */}
+      <div className="cal-grid">
+        {grid.map((day, i) => (
           <motion.div
             key={i}
-            className="calendar-event"
-            initial={{ opacity: 0, x: -10 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: i * 0.08 }}
+            className={[
+              'cal-cell',
+              day === null ? 'cal-cell-empty' : '',
+              day === selectedDay ? 'cal-cell-selected' : '',
+              day && isToday(day) ? 'cal-cell-today' : '',
+            ].filter(Boolean).join(' ')}
+            onClick={(e) => {
+              e.stopPropagation();
+              if (day) setSelectedDay(day);
+            }}
+            whileTap={{ scale: 0.9 }}
           >
-            {/* Color accent bar */}
-            <div
-              className="calendar-event-accent"
-              style={{
-                backgroundColor: getEventColor(i),
-              }}
-            />
-
-            <div className="calendar-event-info">
-              <span className="calendar-event-title">{event.title}</span>
-              <span className="calendar-event-time">
-                {formatEventTime(event.start)} — {getTimeRemaining(event.start)}
-              </span>
-            </div>
+            {day && (
+              <>
+                <span>{day}</span>
+                {eventDays.has(day) && <div className="cal-event-dot" />}
+              </>
+            )}
           </motion.div>
         ))}
       </div>
+
+      {/* Selected day events (if any) */}
+      {selectedEvents.length > 0 && (
+        <div className="cal-events">
+          {selectedEvents.slice(0, 2).map((ev, i) => (
+            <div key={i} className="cal-event-item">
+              <div className="cal-event-accent" />
+              <span className="cal-event-text">{ev.title}</span>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
-}
-
-// Color palette for event accent bars
-function getEventColor(index) {
-  const colors = ['#6366f1', '#f59e0b', '#10b981', '#ef4444', '#8b5cf6'];
-  return colors[index % colors.length];
-}
-
-// Format ISO date to a readable time string
-function formatEventTime(isoString) {
-  try {
-    const date = new Date(isoString);
-    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-  } catch {
-    return '';
-  }
-}
-
-// Get human-readable time remaining
-function getTimeRemaining(isoString) {
-  const now = new Date();
-  const target = new Date(isoString);
-  const diffMs = target - now;
-
-  if (diffMs <= 0) return 'happening now';
-
-  const mins = Math.floor(diffMs / 60000);
-  if (mins < 60) return `in ${mins}m`;
-
-  const hours = Math.floor(mins / 60);
-  const remainMins = mins % 60;
-  return remainMins > 0 ? `in ${hours}h ${remainMins}m` : `in ${hours}h`;
 }
 
 export default CalendarWidget;

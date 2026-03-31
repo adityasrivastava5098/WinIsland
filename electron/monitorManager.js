@@ -8,10 +8,10 @@
 const { BrowserWindow, screen } = require('electron');
 const path = require('path');
 
-// Island window dimensions
-const ISLAND_WIDTH = 350;
-const ISLAND_HEIGHT = 210; // tall enough for expanded state
-const COLLAPSED_HEIGHT = 38;
+// Island window dimensions — must be large enough for expanded state.
+// Transparent regions are click-through so extra size doesn't block.
+const ISLAND_WIDTH = 380;
+const ISLAND_HEIGHT = 220;
 
 class MonitorManager {
   constructor(isDev) {

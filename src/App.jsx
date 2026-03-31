@@ -1,16 +1,22 @@
 // ============================================================
 // App Root
-// Manages global state (media, calendar, active mode) and
-// renders the DynamicIsland component with live data.
+// Manages global state (media, calendar, active mode),
+// extracts dominant color from album art, and renders
+// the DynamicIsland component with live data.
 // ============================================================
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import DynamicIsland from './components/DynamicIsland';
+import { extractDominantColor } from './utils/colorExtractor';
 
 function App() {
   const [mediaState, setMediaState] = useState(null);
   const [calendarEvents, setCalendarEvents] = useState([]);
   const [mode, setMode] = useState('music'); // 'music' | 'calendar'
+  const [accentColor, setAccentColor] = useState('#ffffff');
+
+  // Track the last artwork we extracted color from to avoid redundant work
+  const lastArtworkRef = useRef(null);
 
   // ----------------------------------------------------------
   // Subscribe to real-time media updates from the main process
@@ -28,6 +34,19 @@ function App() {
 
     return () => unsub?.();
   }, []);
+
+  // ----------------------------------------------------------
+  // Extract dominant color whenever artwork changes
+  // ----------------------------------------------------------
+  useEffect(() => {
+    const artwork = mediaState?.artwork;
+    if (!artwork || artwork === lastArtworkRef.current) return;
+    lastArtworkRef.current = artwork;
+
+    extractDominantColor(artwork).then((color) => {
+      setAccentColor(color.hex);
+    });
+  }, [mediaState?.artwork]);
 
   // ----------------------------------------------------------
   // Subscribe to calendar event updates
@@ -60,6 +79,15 @@ function App() {
   }, []);
 
   // ----------------------------------------------------------
+  // Open the source app (click on album art)
+  // ----------------------------------------------------------
+  const handleOpenSource = useCallback(() => {
+    if (mediaState?.source) {
+      window.electronAPI?.openSourceApp(mediaState.source);
+    }
+  }, [mediaState?.source]);
+
+  // ----------------------------------------------------------
   // Toggle between music and calendar modes
   // ----------------------------------------------------------
   const toggleMode = useCallback(() => {
@@ -71,9 +99,11 @@ function App() {
       mode={mode}
       mediaState={mediaState}
       calendarEvents={calendarEvents}
+      accentColor={accentColor}
       onPlayPause={handlePlayPause}
       onNext={handleNext}
       onPrevious={handlePrevious}
+      onOpenSource={handleOpenSource}
       onToggleMode={toggleMode}
     />
   );

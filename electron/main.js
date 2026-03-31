@@ -4,7 +4,7 @@
 // and orchestrates all backend modules (monitors, media, calendar, tray).
 // ============================================================
 
-const { app, ipcMain, screen } = require('electron');
+const { app, ipcMain, screen, shell } = require('electron');
 const path = require('path');
 const MonitorManager = require('./monitorManager');
 const MediaManager = require('./mediaManager');
@@ -87,12 +87,43 @@ ipcMain.handle('get-calendar-events', () => {
   return calendarManager?.getEvents() || [];
 });
 
+// Open the source media app (Spotify, Apple Music, browser, etc.)
+ipcMain.handle('open-source-app', async (_event, sourceId) => {
+  if (!sourceId) return false;
+  try {
+    // Map known app user model IDs to launch commands
+    const appMap = {
+      'Spotify.exe': 'spotify:',
+      'AppleInc.AppleMusic': 'apple-music:',
+      'Microsoft.ZuneMusic': 'mswindowsmusic:',
+    };
+
+    // Try to find a matching app
+    for (const [key, uri] of Object.entries(appMap)) {
+      if (sourceId.toLowerCase().includes(key.toLowerCase())) {
+        await shell.openExternal(uri);
+        return true;
+      }
+    }
+
+    // For browsers and unknown apps, try launching via shell
+    // The sourceId from SMTC often looks like "chrome.exe" or "msedge.exe"
+    if (sourceId.includes('chrome') || sourceId.includes('edge') || sourceId.includes('firefox')) {
+      // Can't easily focus a specific browser tab, just ignore
+      return false;
+    }
+
+    return false;
+  } catch {
+    return false;
+  }
+});
+
 // ============================================================
 // App lifecycle
 // ============================================================
 app.on('window-all-closed', () => {
-  // On Windows, we keep the app running via tray even if all windows close
-  // (this shouldn't happen normally since island windows are persistent)
+  // Keep the app running via tray even if all windows close
 });
 
 app.on('before-quit', () => {

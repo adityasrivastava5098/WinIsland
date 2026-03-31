@@ -1,7 +1,7 @@
 /* =============================================================
-   Dynamic Island — Global Styles
-   Premium dark-mode design with acrylic blur, smooth animations,
-   and a pill-shaped UI inspired by Apple's Dynamic Island.
+   Dynamic Island — Global Styles (Redesigned)
+   Pure black (#000) background. Apple-like premium aesthetic.
+   No gray transparency. Subtle glow. Smooth animations.
    ============================================================= */
 
 /* ---- Reset & Base ---- */
@@ -12,32 +12,17 @@
 }
 
 :root {
-  /* Color tokens */
-  --island-bg: rgba(16, 16, 18, 0.88);
-  --island-bg-solid: #101012;
-  --island-border: rgba(255, 255, 255, 0.08);
-  --island-shine: linear-gradient(
-    135deg,
-    rgba(255, 255, 255, 0.1) 0%,
-    rgba(255, 255, 255, 0.02) 50%,
-    transparent 100%
-  );
-  --text-primary: #f0f0f2;
-  --text-secondary: rgba(255, 255, 255, 0.55);
+  --island-bg: #000000;
+  --text-primary: #f5f5f7;
+  --text-secondary: rgba(255, 255, 255, 0.60);
   --text-tertiary: rgba(255, 255, 255, 0.35);
-  --accent: #6366f1;
-  --accent-glow: rgba(99, 102, 241, 0.3);
-  --progress-bg: rgba(255, 255, 255, 0.1);
-  --progress-fill: #6366f1;
-  --btn-hover: rgba(255, 255, 255, 0.1);
-  --btn-active: rgba(255, 255, 255, 0.15);
-
-  /* Typography */
+  --accent: #ffffff;
+  --progress-bg: rgba(255, 255, 255, 0.15);
+  --btn-hover: rgba(255, 255, 255, 0.10);
+  --btn-active: rgba(255, 255, 255, 0.18);
   --font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-
-  /* Sizing */
-  --art-size: 60px;
-  --thumb-size: 22px;
+  --art-size-expanded: 58px;
+  --thumb-size: 28px;
 }
 
 html, body, #root {
@@ -52,70 +37,62 @@ html, body, #root {
 }
 
 /* =============================================================
-   Island Container — centers the pill at the top of the window
+   Island Container
    ============================================================= */
 .island-container {
   display: flex;
   justify-content: center;
-  padding-top: 6px;
+  padding-top: 4px;
   width: 100%;
+  height: 100%;
 }
 
 /* =============================================================
-   Island — The main pill-shaped element
+   Island — Pure black pill
    ============================================================= */
 .island {
   position: relative;
   background: var(--island-bg);
-  border: 1px solid var(--island-border);
-  backdrop-filter: blur(40px) saturate(180%);
-  -webkit-backdrop-filter: blur(40px) saturate(180%);
   overflow: hidden;
   display: flex;
   align-items: center;
   justify-content: center;
   box-shadow:
-    0 4px 24px rgba(0, 0, 0, 0.4),
-    0 1px 3px rgba(0, 0, 0, 0.3),
-    inset 0 0.5px 0 rgba(255, 255, 255, 0.08);
-  transition: box-shadow 0.3s ease;
+    0 2px 16px rgba(0, 0, 0, 0.6),
+    0 0 1px rgba(255, 255, 255, 0.05);
+  will-change: width, height, border-radius;
 }
 
-.island:hover {
-  box-shadow:
-    0 8px 40px rgba(0, 0, 0, 0.5),
-    0 2px 8px rgba(0, 0, 0, 0.3),
-    inset 0 0.5px 0 rgba(255, 255, 255, 0.1);
-}
-
-/* Glossy shine overlay on the top edge */
-.island-shine {
+/* Outer glow element positioned behind */
+.island-glow {
   position: absolute;
-  inset: 0;
-  background: var(--island-shine);
+  inset: -1px;
+  border-radius: inherit;
   pointer-events: none;
-  z-index: 10;
+  z-index: -1;
+  transition: box-shadow 0.6s ease;
 }
 
 /* =============================================================
-   Collapsed Content — pill shows minimal info
+   Collapsed Content — circular art + waveform
    ============================================================= */
 .island-collapsed-content {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 0 14px;
+  padding: 0 10px;
   width: 100%;
   height: 100%;
+  gap: 0;
 }
 
-/* Album art thumbnail in collapsed state */
-.island-thumb {
+/* Circular album art thumbnail */
+.island-thumb-circle {
   width: var(--thumb-size);
   height: var(--thumb-size);
-  border-radius: 6px;
+  border-radius: 50%;
   object-fit: cover;
   flex-shrink: 0;
+  border: 1px solid rgba(255, 255, 255, 0.06);
 }
 
 .island-thumb-placeholder {
@@ -126,86 +103,51 @@ html, body, #root {
   color: var(--text-secondary);
 }
 
-.island-collapsed-text {
+/* Spacer pushes waveform to the right end */
+.island-collapsed-spacer {
   flex: 1;
-  min-width: 0;
-  overflow: hidden;
 }
 
-.island-collapsed-title {
-  font-size: 12px;
-  font-weight: 500;
-  color: var(--text-primary);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  display: block;
-  letter-spacing: -0.01em;
-}
-
-/* Calendar icon in collapsed state */
-.island-calendar-icon {
-  width: var(--thumb-size);
-  height: var(--thumb-size);
-  border-radius: 6px;
-  background: rgba(99, 102, 241, 0.15);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--accent);
-  flex-shrink: 0;
-}
-
-/* Time remaining badge */
-.island-time-badge {
-  font-size: 10px;
-  font-weight: 600;
-  color: var(--accent);
-  background: rgba(99, 102, 241, 0.12);
-  padding: 2px 7px;
-  border-radius: 8px;
-  flex-shrink: 0;
-  letter-spacing: 0.02em;
-}
-
-/* Idle state dot */
+/* Idle state */
 .island-idle {
   justify-content: center;
 }
 
 .island-idle-dot {
-  width: 6px;
-  height: 6px;
+  width: 5px;
+  height: 5px;
   border-radius: 50%;
   background: var(--text-tertiary);
-  animation: pulse-idle 2s ease-in-out infinite;
+  animation: pulse-idle 2.5s ease-in-out infinite;
 }
 
 @keyframes pulse-idle {
-  0%, 100% { opacity: 0.4; transform: scale(1); }
-  50% { opacity: 0.8; transform: scale(1.3); }
+  0%, 100% { opacity: 0.3; transform: scale(1); }
+  50% { opacity: 0.7; transform: scale(1.4); }
 }
 
 /* =============================================================
-   Expanded Content — shows full widget
+   Expanded Content
    ============================================================= */
 .island-expanded-content {
   width: 100%;
   height: 100%;
-  padding: 14px;
+  padding: 14px 16px;
   position: relative;
+  display: flex;
+  flex-direction: column;
 }
 
-/* Mode toggle button (switch between music/calendar) */
+/* Mode toggle button */
 .island-mode-toggle {
   position: absolute;
-  top: 8px;
-  right: 8px;
-  width: 22px;
-  height: 22px;
+  top: 10px;
+  right: 10px;
+  width: 24px;
+  height: 24px;
   border-radius: 50%;
   background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.06);
   color: var(--text-secondary);
   display: flex;
   align-items: center;
@@ -222,32 +164,38 @@ html, body, #root {
 }
 
 /* =============================================================
-   Music Widget
+   Music Widget — Expanded
    ============================================================= */
 .music-widget {
   display: flex;
-  gap: 12px;
+  flex-direction: column;
   width: 100%;
   height: 100%;
-  align-items: flex-start;
+  gap: 8px;
 }
 
 .music-empty {
-  flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 8px;
+  gap: 10px;
 }
 
 .music-empty-icon {
   color: var(--text-tertiary);
-  opacity: 0.6;
+  opacity: 0.5;
 }
 
 .music-empty-text {
-  font-size: 12px;
+  font-size: 13px;
   color: var(--text-secondary);
   font-weight: 400;
+}
+
+/* Top row: art + info + link */
+.music-top-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
 
 /* Album art container */
@@ -257,11 +205,11 @@ html, body, #root {
 }
 
 .music-art {
-  width: var(--art-size);
-  height: var(--art-size);
-  border-radius: 12px;
+  width: var(--art-size-expanded);
+  height: var(--art-size-expanded);
+  border-radius: 10px;
   object-fit: cover;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.3);
+  display: block;
 }
 
 .music-art-placeholder {
@@ -272,51 +220,43 @@ html, body, #root {
   color: var(--text-tertiary);
 }
 
-/* Glow behind album art when playing */
+/* Glow behind art when playing */
 .music-art-glow {
   position: absolute;
-  inset: -8px;
-  border-radius: 20px;
-  background: var(--accent-glow);
-  filter: blur(20px);
+  inset: -6px;
+  border-radius: 16px;
+  filter: blur(16px);
   z-index: -1;
+  opacity: 0.6;
   animation: art-glow 3s ease-in-out infinite alternate;
 }
 
 @keyframes art-glow {
-  0% { opacity: 0.4; transform: scale(0.9); }
-  100% { opacity: 0.7; transform: scale(1.1); }
+  0% { opacity: 0.3; transform: scale(0.95); }
+  100% { opacity: 0.6; transform: scale(1.05); }
 }
 
-/* Track info section */
+/* Track info */
 .music-info {
   flex: 1;
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  justify-content: center;
-  height: 100%;
-}
-
-.music-text {
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
+  gap: 2px;
 }
 
 .music-title {
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 600;
   color: var(--text-primary);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  letter-spacing: -0.01em;
+  letter-spacing: -0.02em;
 }
 
 .music-artist {
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 400;
   color: var(--text-secondary);
   white-space: nowrap;
@@ -324,45 +264,85 @@ html, body, #root {
   text-overflow: ellipsis;
 }
 
-/* Progress bar */
-.music-progress-container {
+/* Link button */
+.music-link-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: all 0.15s ease;
+}
+
+.music-link-btn:hover {
+  color: var(--text-primary);
+  background: var(--btn-hover);
+}
+
+/* Seekbar */
+.music-seekbar-container {
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 4px;
+  width: 100%;
 }
 
-.music-progress-bar {
+.music-seekbar-track {
+  position: relative;
   width: 100%;
-  height: 3px;
+  height: 4px;
   background: var(--progress-bg);
   border-radius: 2px;
-  overflow: hidden;
+  overflow: visible;
 }
 
-.music-progress-fill {
+.music-seekbar-fill {
+  position: absolute;
+  top: 0;
+  left: 0;
   height: 100%;
-  background: linear-gradient(90deg, var(--accent), #818cf8);
   border-radius: 2px;
+  min-width: 0;
+}
+
+.music-seekbar-thumb {
+  position: absolute;
+  top: 50%;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #fff;
+  transform: translate(-50%, -50%);
+  box-shadow: 0 0 4px rgba(0, 0, 0, 0.4);
 }
 
 .music-time {
   display: flex;
   justify-content: space-between;
-  font-size: 9px;
+  font-size: 10px;
   color: var(--text-tertiary);
   font-variant-numeric: tabular-nums;
+  font-weight: 500;
 }
 
-/* Playback controls */
+/* Playback controls — centered */
 .music-controls {
   display: flex;
   align-items: center;
-  gap: 4px;
+  justify-content: center;
+  gap: 16px;
+  margin-top: auto;
 }
 
 .music-btn {
-  width: 28px;
-  height: 28px;
+  width: 36px;
+  height: 36px;
   border-radius: 50%;
   background: transparent;
   border: none;
@@ -371,123 +351,171 @@ html, body, #root {
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: all 0.12s ease;
 }
 
 .music-btn:hover {
   background: var(--btn-hover);
-  transform: scale(1.1);
+  transform: scale(1.08);
 }
 
 .music-btn:active {
   background: var(--btn-active);
-  transform: scale(0.95);
+  transform: scale(0.94);
 }
 
 .music-btn-play {
-  width: 34px;
-  height: 34px;
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.music-btn-play:hover {
-  background: rgba(255, 255, 255, 0.14);
-}
-
-.music-wave-indicator {
-  margin-left: auto;
+  width: 44px;
+  height: 44px;
 }
 
 /* =============================================================
-   Calendar Widget
+   Calendar Widget — Monthly Grid
    ============================================================= */
 .calendar-widget {
   width: 100%;
   height: 100%;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 4px;
 }
 
-.calendar-empty {
+/* Month/year header */
+.cal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 2px;
+}
+
+.cal-month-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-primary);
+  letter-spacing: -0.01em;
+}
+
+.cal-nav-btn {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  display: flex;
   align-items: center;
   justify-content: center;
+  cursor: pointer;
+  transition: all 0.15s ease;
 }
 
-.calendar-empty-icon {
-  color: var(--text-tertiary);
-  opacity: 0.6;
+.cal-nav-btn:hover {
+  background: var(--btn-hover);
+  color: var(--text-primary);
 }
 
-.calendar-empty-text {
-  font-size: 12px;
-  color: var(--text-secondary);
+/* Day-of-week headers */
+.cal-day-headers {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 1px;
+  text-align: center;
 }
 
-.calendar-header {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 11px;
+.cal-day-header {
+  font-size: 9px;
   font-weight: 600;
-  color: var(--text-secondary);
+  color: var(--text-tertiary);
   text-transform: uppercase;
-  letter-spacing: 0.06em;
+  padding: 2px 0;
 }
 
-.calendar-header svg {
-  color: var(--accent);
+/* Date grid */
+.cal-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 1px;
+  flex: 1;
 }
 
-.calendar-list {
+.cal-cell {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  flex: 1;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  border-radius: 6px;
+  cursor: pointer;
+  position: relative;
+  padding: 1px 0;
+  transition: background 0.1s ease;
+}
+
+.cal-cell:hover:not(.cal-cell-empty) {
+  background: var(--btn-hover);
+}
+
+.cal-cell-empty {
+  cursor: default;
+}
+
+.cal-cell-today {
+  color: #000;
+  background: var(--text-primary) !important;
+  font-weight: 700;
+  border-radius: 50%;
+  aspect-ratio: 1;
+}
+
+.cal-cell-selected:not(.cal-cell-today) {
+  background: rgba(255, 255, 255, 0.12);
+  color: var(--text-primary);
+}
+
+/* Event indicator dot */
+.cal-event-dot {
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: #6366f1;
+  position: absolute;
+  bottom: 1px;
+}
+
+/* Selected day events */
+.cal-events {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  max-height: 36px;
   overflow: hidden;
 }
 
-.calendar-event {
+.cal-event-item {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 6px 8px;
+  gap: 6px;
+  padding: 2px 6px;
   background: rgba(255, 255, 255, 0.04);
-  border-radius: 8px;
-  transition: background 0.15s ease;
+  border-radius: 4px;
 }
 
-.calendar-event:hover {
-  background: rgba(255, 255, 255, 0.07);
-}
-
-.calendar-event-accent {
-  width: 3px;
-  height: 24px;
-  border-radius: 2px;
+.cal-event-accent {
+  width: 2px;
+  height: 12px;
+  border-radius: 1px;
+  background: #6366f1;
   flex-shrink: 0;
 }
 
-.calendar-event-info {
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
-  min-width: 0;
-}
-
-.calendar-event-title {
-  font-size: 12px;
-  font-weight: 500;
-  color: var(--text-primary);
+.cal-event-text {
+  font-size: 9px;
+  color: var(--text-secondary);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-}
-
-.calendar-event-time {
-  font-size: 10px;
-  color: var(--text-secondary);
 }
 
 /* =============================================================
@@ -496,30 +524,28 @@ html, body, #root {
 .sound-wave {
   display: flex;
   align-items: flex-end;
-  gap: 2px;
-  height: 14px;
   flex-shrink: 0;
 }
 
 .sound-bar {
-  width: 2.5px;
-  background: var(--accent);
-  border-radius: 1px;
-  animation: sound-bounce 0.8s ease-in-out infinite alternate;
+  border-radius: 1.5px;
+  animation: sound-bounce ease-in-out infinite alternate;
+  transform-origin: bottom;
 }
 
-.sound-bar:nth-child(1) { height: 40%; }
-.sound-bar:nth-child(2) { height: 70%; }
-.sound-bar:nth-child(3) { height: 50%; }
-.sound-bar:nth-child(4) { height: 90%; }
+.sound-bar:nth-child(1) { height: 35%; }
+.sound-bar:nth-child(2) { height: 65%; }
+.sound-bar:nth-child(3) { height: 45%; }
+.sound-bar:nth-child(4) { height: 85%; }
+.sound-bar:nth-child(5) { height: 55%; }
 
 @keyframes sound-bounce {
-  0% { transform: scaleY(0.3); }
+  0% { transform: scaleY(0.25); }
   100% { transform: scaleY(1); }
 }
 
 /* =============================================================
-   Scrollbar — hidden for clean look
+   Scrollbar — hidden
    ============================================================= */
 ::-webkit-scrollbar {
   display: none;
