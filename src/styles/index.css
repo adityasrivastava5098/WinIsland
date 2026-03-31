@@ -114,9 +114,9 @@ html, body, #root {
 }
 
 .island-idle-dot {
-  width: 14px;
-  height: 4px;
-  border-radius: 2px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
   background: var(--text-tertiary);
   animation: pulse-idle 3s ease-in-out infinite;
 }
