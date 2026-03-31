@@ -5,3 +5,4 @@ dist-electron/
 *.log
 .DS_Store
 Thumbs.db
+.winisland_data/

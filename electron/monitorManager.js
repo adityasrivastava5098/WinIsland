@@ -99,12 +99,12 @@ class MonitorManager {
       y: pos.y,
       width: ISLAND_WIDTH,
       height: ISLAND_HEIGHT,
-      frame: false,              // no title bar
-      transparent: true,         // transparent background
-      alwaysOnTop: true,         // stay above everything
-      skipTaskbar: true,         // don't show in taskbar
+      frame: false,
+      transparent: true,
+      alwaysOnTop: true,
+      skipTaskbar: true,
       resizable: false,
-      focusable: true,           // allow interaction
+      focusable: true,
       hasShadow: false,
       roundedCorners: true,
       webPreferences: {
@@ -112,31 +112,79 @@ class MonitorManager {
         contextIsolation: true,
         nodeIntegration: false,
         sandbox: false,
+        // Disable GPU at window level to reinforce app-level flags
+        offscreen: false,
       },
     });
+
+    const loadContent = () => {
+      if (this.isDev) {
+        win.loadURL('http://localhost:5173').catch(() => {
+          // Retry after 2 seconds if Vite isn't ready yet
+          setTimeout(() => loadContent(), 2000);
+        });
+      } else {
+        win.loadFile(path.join(__dirname, '..', 'dist', 'index.html'));
+      }
+    };
 
     // Keep always-on-top even over fullscreen apps
     win.setAlwaysOnTop(true, 'screen-saver');
     win.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
 
-    // Load the UI
-    if (this.isDev) {
-      win.loadURL('http://localhost:5173');
-    } else {
-      win.loadFile(path.join(__dirname, '..', 'dist', 'index.html'));
-    }
+    loadContent();
 
     // Default to click-through for transparent regions
     win.webContents.on('did-finish-load', () => {
       win.setIgnoreMouseEvents(true, { forward: true });
+      // Ensure window is always visible after reload
+      if (!win.isVisible()) win.show();
     });
+
+    // ---- AUTO-RECOVERY: Reload on renderer crash ----
+    // This is the key fix: when the GPU/renderer process crashes,
+    // instead of going blank/invisible, the window reloads itself.
+    win.webContents.on('render-process-gone', (event, details) => {
+      console.log(`[WinIsland] Renderer crashed (${details.reason}), recovering...`);
+      setTimeout(() => {
+        if (!win.isDestroyed()) {
+          loadContent();
+        } else {
+          // Window was destroyed, recreate it
+          this._createWindowForDisplay(display);
+        }
+      }, 1000);
+    });
+
+    win.webContents.on('unresponsive', () => {
+      console.log('[WinIsland] Window became unresponsive, reloading...');
+      setTimeout(() => {
+        if (!win.isDestroyed()) win.reload();
+      }, 2000);
+    });
+
+    win.webContents.on('responsive', () => {
+      if (!win.isDestroyed()) {
+        win.setIgnoreMouseEvents(true, { forward: true });
+      }
+    });
+    // --------------------------------------------------
 
     // Store reference keyed by display ID
     this.windows.set(display.id, win);
 
-    // Cleanup reference on close
+    // On close, don't just delete: attempt to recreate after a short delay
     win.on('closed', () => {
       this.windows.delete(display.id);
+      // Attempt window resurrection if the display still exists
+      setTimeout(() => {
+        const displays = screen.getAllDisplays();
+        const stillExists = displays.find(d => d.id === display.id);
+        if (stillExists && !this.windows.has(display.id)) {
+          console.log(`[WinIsland] Resurrecting window for display ${display.id}`);
+          this._createWindowForDisplay(stillExists);
+        }
+      }, 1500);
     });
   }
 
