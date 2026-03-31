@@ -8,12 +8,13 @@
 // NO link icon. Minimal and premium.
 // ============================================================
 
-import React, { useRef, useCallback, useState } from 'react';
+import React, { useRef, useCallback, useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 
 function MusicWidget({
   mediaState,
   isPlaying,
+  expandSignal = 0,
   accentColor = '#ffffff',
   onPlayPause,
   onNext,
@@ -22,8 +23,11 @@ function MusicWidget({
   onOpenSource,
 }) {
   const seekTrackRef = useRef(null);
+  const lastTrackKeyRef = useRef('');
+  const lastIsPlayingRef = useRef(isPlaying);
   const [isSeeking, setIsSeeking] = useState(false);
   const [seekPreview, setSeekPreview] = useState(null);
+  const [displayPosition, setDisplayPosition] = useState(0);
 
   if (!mediaState || mediaState.status === 'no_session') {
     return (
@@ -41,9 +45,71 @@ function MusicWidget({
   }
 
   const duration = mediaState.duration || 0;
-  const position = isSeeking ? seekPreview : (mediaState.position || 0);
+  const mediaPosition = mediaState.position || 0;
+  const position = isSeeking ? (seekPreview || 0) : displayPosition;
   const progress = duration > 0 ? (position / duration) * 100 : 0;
   const barColor = accentColor !== '#ffffff' ? accentColor : '#fff';
+
+  // Sync from media updates with monotonic playback behavior.
+  useEffect(() => {
+    if (isSeeking) return;
+
+    const trackKey = `${mediaState.source || ''}|${mediaState.title || ''}|${mediaState.artist || ''}|${duration}`;
+    const trackChanged = trackKey !== lastTrackKeyRef.current;
+
+    if (trackChanged) {
+      lastTrackKeyRef.current = trackKey;
+      setDisplayPosition(clampPosition(mediaPosition, duration));
+      return;
+    }
+
+    if (!isPlaying) {
+      setDisplayPosition(clampPosition(mediaPosition, duration));
+      return;
+    }
+
+    setDisplayPosition((prev) => {
+      // Forced monotonic mode during playback:
+      // never move backward from backend poll noise.
+      if (mediaPosition <= prev) return prev;
+      return clampPosition(mediaPosition, duration);
+    });
+  }, [mediaState.source, mediaState.title, mediaState.artist, duration, mediaPosition, isPlaying, isSeeking]);
+
+  // Explicit resets on pause/resume boundaries.
+  useEffect(() => {
+    const wasPlaying = lastIsPlayingRef.current;
+    if (wasPlaying !== isPlaying && !isSeeking) {
+      setDisplayPosition(clampPosition(mediaPosition, duration));
+    }
+    lastIsPlayingRef.current = isPlaying;
+  }, [isPlaying, isSeeking, mediaPosition, duration]);
+
+  // Force refresh timestamp on every widget expand.
+  useEffect(() => {
+    if (isSeeking) return;
+    setDisplayPosition(clampPosition(mediaPosition, duration));
+  }, [expandSignal, isSeeking, mediaPosition, duration]);
+
+  // Advance exactly once per second while playing.
+  useEffect(() => {
+    if (isSeeking || !isPlaying || duration <= 0) return undefined;
+
+    const timer = setInterval(() => {
+      setDisplayPosition((prev) => {
+        const next = prev + 1;
+        return next > duration ? duration : next;
+      });
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [isSeeking, isPlaying, duration]);
+
+  function clampPosition(value, maxDuration) {
+    if (!Number.isFinite(value) || value < 0) return 0;
+    if (!maxDuration || maxDuration <= 0) return value;
+    return value > maxDuration ? maxDuration : value;
+  }
 
   // ----------------------------------------------------------
   // Interactive seekbar handlers
@@ -71,6 +137,7 @@ function MusicWidget({
       const p = getSeekPosition(ev.clientX);
       setIsSeeking(false);
       setSeekPreview(null);
+      setDisplayPosition(clampPosition(p, duration));
       onSeek?.(p);
       document.removeEventListener('mousemove', handleMove);
       document.removeEventListener('mouseup', handleUp);
