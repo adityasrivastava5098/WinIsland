@@ -27,6 +27,7 @@ function DynamicIsland({
 }) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [shouldShowMedia, setShouldShowMedia] = useState(false);
+  const [isHovered, setIsHovered] = useState(false);
   const islandRef = useRef(null);
   const lingerTimerRef = useRef(null);
 
@@ -142,14 +143,39 @@ function DynamicIsland({
             </div>
           )}
 
-          <div className="island-collapsed-spacer" />
-
-          {/* Status indicator: waveform if playing, pulse if paused */}
-          {isPlaying ? (
-            <SoundWave color={accentColor} size="large" />
-          ) : (
-            <div className="island-idle-dot" style={{ opacity: 0.6 }} />
-          )}
+          {/* On Hov: Show Track Info. Off Hov: Show Waveform */}
+          <AnimatePresence mode="wait">
+            {isHovered ? (
+              <motion.div
+                key="info"
+                className="island-pill-info"
+                initial={{ opacity: 0, x: 8 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -8 }}
+                transition={{ duration: 0.2 }}
+              >
+                <span className="pill-title">{mediaState?.title || 'Unknown'}</span>
+                <span className="pill-artist">{mediaState?.artist || 'Unknown'}</span>
+              </motion.div>
+            ) : (
+              <motion.div
+                key="waveform"
+                className="island-pill-visuals"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.2 }}
+                style={{ display: 'flex', alignItems: 'center', width: '100%', height: '100%' }}
+              >
+                <div className="island-collapsed-spacer" />
+                {isPlaying ? (
+                  <SoundWave color={accentColor} size="large" />
+                ) : (
+                  <div className="island-idle-dot" style={{ opacity: 0.6 }} />
+                )}
+              </motion.div>
+            )}
+          </AnimatePresence>
         </motion.div>
       );
     }
@@ -188,8 +214,12 @@ function DynamicIsland({
             setIsExpanded(true);
           }
         }}
-        onMouseEnter={() => window.electronAPI?.setIgnoreMouseEvents(false)}
+        onMouseEnter={() => {
+          setIsHovered(true);
+          window.electronAPI?.setIgnoreMouseEvents(false);
+        }}
         onMouseLeave={() => {
+          setIsHovered(false);
           if (!isExpanded) window.electronAPI?.setIgnoreMouseEvents(true, { forward: true });
         }}
         style={{ cursor: isExpanded ? 'default' : 'pointer' }}

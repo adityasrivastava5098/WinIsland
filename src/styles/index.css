@@ -19,8 +19,8 @@
   --btn-hover: rgba(255, 255, 255, 0.10);
   --btn-active: rgba(255, 255, 255, 0.18);
   --font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  --art-size-expanded: 58px;
-  --thumb-size: 28px;
+  --art-size-expanded: 70px;
+  --thumb-size: 25px;
 }
 
 html, body, #root {
@@ -108,17 +108,47 @@ html, body, #root {
   flex: 1;
 }
 
+/* Pill Hover Info (Track + Artist) */
+.island-pill-info {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  margin-left: 8px;
+  overflow: hidden;
+  flex: 1;
+}
+
+.pill-title {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.2;
+}
+
+.pill-artist {
+  font-size: 9px;
+  font-weight: 400;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.2;
+}
+
 /* Idle */
 .island-idle {
   justify-content: center;
 }
 
 .island-idle-dot {
-  width: 6px;
-  height: 6px;
+  width: 9px;
+  height: 9px;
   border-radius: 50%;
   background: var(--text-tertiary);
-  animation: pulse-idle 3s ease-in-out infinite;
+  /* animation: pulse-idle 3s ease-in-out infinite; */
 }
 
 @keyframes pulse-idle {
@@ -267,6 +297,7 @@ html, body, #root {
   flex-direction: column;
   gap: 4px;
   width: 100%;
+  margin-top: 20px;
 }
 
 .music-seekbar-track {
