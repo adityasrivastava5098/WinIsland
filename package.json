@@ -1,0 +1,52 @@
+{
+  "name": "dynamic-island",
+  "version": "1.0.0",
+  "description": "Dynamic Island for Windows — a sleek always-on-top overlay with media controls and calendar integration",
+  "main": "electron/main.js",
+  "scripts": {
+    "dev": "concurrently \"vite\" \"wait-on http://localhost:5173 && cross-env NODE_ENV=development electron .\"",
+    "build": "vite build && electron-builder",
+    "start": "cross-env NODE_ENV=production electron .",
+    "pack": "vite build && electron-builder --dir"
+  },
+  "keywords": ["dynamic-island", "overlay", "windows", "media-controls"],
+  "author": "Aditya Srivastava",
+  "license": "MIT",
+  "type": "commonjs",
+  "dependencies": {
+    "electron": "^41.1.0",
+    "framer-motion": "^12.38.0",
+    "react": "^19.2.4",
+    "react-dom": "^19.2.4"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^6.0.1",
+    "concurrently": "^9.2.1",
+    "cross-env": "^10.1.0",
+    "electron-builder": "^26.8.1",
+    "vite": "^8.0.3",
+    "wait-on": "^9.0.4"
+  },
+  "build": {
+    "appId": "com.dynamicisland.windows",
+    "productName": "Dynamic Island",
+    "directories": {
+      "output": "dist-electron"
+    },
+    "files": [
+      "electron/**/*",
+      "dist/**/*",
+      "assets/**/*"
+    ],
+    "win": {
+      "target": "nsis",
+      "icon": "assets/icon.png"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "installerIcon": "assets/icon.png",
+      "uninstallerIcon": "assets/icon.png"
+    }
+  }
+}
