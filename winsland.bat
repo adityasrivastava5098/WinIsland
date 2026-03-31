@@ -23,12 +23,19 @@ timeout /t 5 /nobreak > nul
 
 :: Launch Electron
 echo.
-echo Launching Dynamic Island...
+echo Launching WinIsland...
 set NODE_ENV=development
-npx electron .
+
+:: Try to clean common cache if it exists (fixes "Unable to create cache" errors)
+if exist "%AppData%\winisland\Cache" (
+    rmdir /S /Q "%AppData%\winisland\Cache" > nul 2>&1
+)
+
+npx electron . --disable-gpu --disable-software-rasterizer
 
 if %ERRORLEVEL% NEQ 0 (
     echo.
     echo Error: Electron failed to start.
+    echo Tip: Try running this as Administrator if permissions are an issue.
     pause
 )

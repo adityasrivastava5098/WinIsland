@@ -12,6 +12,16 @@ const MediaManager = require('./mediaManager');
 const CalendarManager = require('./calendarManager');
 const TrayManager = require('./trayManager');
 
+// ---- Fix GPU and Cache Issues ----
+// Disable GPU acceleration as it can cause crashes on certain systems/drivers
+app.commandLine.appendSwitch('disable-gpu');
+app.commandLine.appendSwitch('disable-software-rasterizer');
+app.commandLine.appendSwitch('disable-gpu-compositing');
+app.commandLine.appendSwitch('disable-gpu-rasterization');
+app.commandLine.appendSwitch('disable-gpu-sandbox');
+app.commandLine.appendSwitch('no-sandbox'); // Necessary for some permission-locked environments
+// ----------------------------------
+
 // Prevent multiple instances
 const gotLock = app.requestSingleInstanceLock();
 if (!gotLock) {
