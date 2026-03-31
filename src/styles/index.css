@@ -1,10 +1,9 @@
 /* =============================================================
-   Dynamic Island — Global Styles (Redesigned)
-   Pure black (#000) background. Apple-like premium aesthetic.
-   No gray transparency. Subtle glow. Smooth animations.
+   Dynamic Island — Global Styles (v3)
+   Pure black. Premium Apple-like aesthetic.
+   Smooth color transitions. No gray transparency.
    ============================================================= */
 
-/* ---- Reset & Base ---- */
 *, *::before, *::after {
   margin: 0;
   padding: 0;
@@ -16,7 +15,6 @@
   --text-primary: #f5f5f7;
   --text-secondary: rgba(255, 255, 255, 0.60);
   --text-tertiary: rgba(255, 255, 255, 0.35);
-  --accent: #ffffff;
   --progress-bg: rgba(255, 255, 255, 0.15);
   --btn-hover: rgba(255, 255, 255, 0.10);
   --btn-active: rgba(255, 255, 255, 0.18);
@@ -63,18 +61,22 @@ html, body, #root {
   will-change: width, height, border-radius;
 }
 
-/* Outer glow element positioned behind */
+/* Outer glow — uses CSS custom property set by React */
 .island-glow {
   position: absolute;
-  inset: -1px;
+  inset: -2px;
   border-radius: inherit;
   pointer-events: none;
   z-index: -1;
-  transition: box-shadow 0.6s ease;
+  box-shadow:
+    0 0 15px var(--glow-color, transparent),
+    0 0 40px var(--glow-color, transparent);
+  opacity: 0.4;
+  transition: box-shadow 0.8s ease, opacity 0.8s ease;
 }
 
 /* =============================================================
-   Collapsed Content — circular art + waveform
+   Collapsed Content
    ============================================================= */
 .island-collapsed-content {
   display: flex;
@@ -85,7 +87,6 @@ html, body, #root {
   gap: 0;
 }
 
-/* Circular album art thumbnail */
 .island-thumb-circle {
   width: var(--thumb-size);
   height: var(--thumb-size);
@@ -103,12 +104,11 @@ html, body, #root {
   color: var(--text-secondary);
 }
 
-/* Spacer pushes waveform to the right end */
 .island-collapsed-spacer {
   flex: 1;
 }
 
-/* Idle state */
+/* Idle */
 .island-idle {
   justify-content: center;
 }
@@ -138,7 +138,7 @@ html, body, #root {
   flex-direction: column;
 }
 
-/* Mode toggle button */
+/* Mode toggle */
 .island-mode-toggle {
   position: absolute;
   top: 10px;
@@ -164,7 +164,7 @@ html, body, #root {
 }
 
 /* =============================================================
-   Music Widget — Expanded
+   Music Widget
    ============================================================= */
 .music-widget {
   display: flex;
@@ -188,17 +188,15 @@ html, body, #root {
 .music-empty-text {
   font-size: 13px;
   color: var(--text-secondary);
-  font-weight: 400;
 }
 
-/* Top row: art + info + link */
+/* Top row */
 .music-top-row {
   display: flex;
   align-items: center;
   gap: 12px;
 }
 
-/* Album art container */
 .music-art-container {
   position: relative;
   flex-shrink: 0;
@@ -220,7 +218,6 @@ html, body, #root {
   color: var(--text-tertiary);
 }
 
-/* Glow behind art when playing */
 .music-art-glow {
   position: absolute;
   inset: -6px;
@@ -228,6 +225,7 @@ html, body, #root {
   filter: blur(16px);
   z-index: -1;
   opacity: 0.6;
+  transition: background 0.6s ease;
   animation: art-glow 3s ease-in-out infinite alternate;
 }
 
@@ -236,7 +234,6 @@ html, body, #root {
   100% { opacity: 0.6; transform: scale(1.05); }
 }
 
-/* Track info */
 .music-info {
   flex: 1;
   min-width: 0;
@@ -264,27 +261,6 @@ html, body, #root {
   text-overflow: ellipsis;
 }
 
-/* Link button */
-.music-link-btn {
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  background: transparent;
-  border: none;
-  color: var(--text-secondary);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  flex-shrink: 0;
-  transition: all 0.15s ease;
-}
-
-.music-link-btn:hover {
-  color: var(--text-primary);
-  background: var(--btn-hover);
-}
-
 /* Seekbar */
 .music-seekbar-container {
   display: flex;
@@ -300,6 +276,17 @@ html, body, #root {
   background: var(--progress-bg);
   border-radius: 2px;
   overflow: visible;
+  cursor: pointer;
+}
+
+.music-seekbar-track:hover {
+  height: 6px;
+}
+
+.music-seekbar-track:hover .music-seekbar-thumb {
+  width: 12px;
+  height: 12px;
+  opacity: 1;
 }
 
 .music-seekbar-fill {
@@ -308,7 +295,7 @@ html, body, #root {
   left: 0;
   height: 100%;
   border-radius: 2px;
-  min-width: 0;
+  transition: width 0.3s linear;
 }
 
 .music-seekbar-thumb {
@@ -319,7 +306,9 @@ html, body, #root {
   border-radius: 50%;
   background: #fff;
   transform: translate(-50%, -50%);
-  box-shadow: 0 0 4px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 0 4px rgba(0, 0, 0, 0.5);
+  transition: width 0.15s, height 0.15s, opacity 0.15s;
+  opacity: 0.8;
 }
 
 .music-time {
@@ -331,7 +320,7 @@ html, body, #root {
   font-weight: 500;
 }
 
-/* Playback controls — centered */
+/* Controls */
 .music-controls {
   display: flex;
   align-items: center;
@@ -370,7 +359,7 @@ html, body, #root {
 }
 
 /* =============================================================
-   Calendar Widget — Monthly Grid
+   Calendar Widget
    ============================================================= */
 .calendar-widget {
   width: 100%;
@@ -380,7 +369,6 @@ html, body, #root {
   gap: 4px;
 }
 
-/* Month/year header */
 .cal-header {
   display: flex;
   align-items: center;
@@ -414,7 +402,6 @@ html, body, #root {
   color: var(--text-primary);
 }
 
-/* Day-of-week headers */
 .cal-day-headers {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
@@ -430,7 +417,6 @@ html, body, #root {
   padding: 2px 0;
 }
 
-/* Date grid */
 .cal-grid {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
@@ -474,7 +460,6 @@ html, body, #root {
   color: var(--text-primary);
 }
 
-/* Event indicator dot */
 .cal-event-dot {
   width: 3px;
   height: 3px;
@@ -484,7 +469,6 @@ html, body, #root {
   bottom: 1px;
 }
 
-/* Selected day events */
 .cal-events {
   display: flex;
   flex-direction: column;
@@ -519,7 +503,7 @@ html, body, #root {
 }
 
 /* =============================================================
-   Sound Wave Animation — equalizer bars
+   Sound Wave — equalizer bars
    ============================================================= */
 .sound-wave {
   display: flex;
@@ -531,6 +515,7 @@ html, body, #root {
   border-radius: 1.5px;
   animation: sound-bounce ease-in-out infinite alternate;
   transform-origin: bottom;
+  transition: background-color 0.6s ease;
 }
 
 .sound-bar:nth-child(1) { height: 35%; }
@@ -545,7 +530,7 @@ html, body, #root {
 }
 
 /* =============================================================
-   Scrollbar — hidden
+   Scrollbar
    ============================================================= */
 ::-webkit-scrollbar {
   display: none;

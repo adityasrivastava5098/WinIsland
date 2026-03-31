@@ -1,26 +1,33 @@
 // ============================================================
-// Media Manager — SMTC Integration (Rewritten)
-// Uses Windows.Media.Control.GlobalSystemMediaTransportControlsSessionManager
-// to detect ALL active media sessions (Apple Music, Spotify,
-// Chrome, Edge, VLC, etc.), prioritize the currently playing
-// session, and extract full metadata including album artwork.
+// Media Manager — SMTC Integration (v3)
+// Uses GlobalSystemMediaTransportControlsSessionManager to
+// detect ALL active media sessions, prioritize playing ones,
+// extract artwork, and support seek + all playback controls.
 // ============================================================
 
 const { execFile } = require('child_process');
+const path = require('path');
+const fs = require('fs');
 
-// Polling interval — 800ms for near-realtime feel without CPU hammering
-const POLL_INTERVAL = 800;
+// Polling intervals
+const POLL_INTERVAL = 500;        // 500ms for live seekbar updates
+
+// Write the PowerShell script to a temp file for reliable execution
+// (inline scripts with backticks and special chars often break)
+const PS_SCRIPT_DIR = path.join(require('os').tmpdir(), 'dynamic_island_scripts');
+
+function ensureScriptDir() {
+  if (!fs.existsSync(PS_SCRIPT_DIR)) {
+    fs.mkdirSync(PS_SCRIPT_DIR, { recursive: true });
+  }
+}
 
 // =================================================================
-// PowerShell script: enumerate ALL SMTC sessions, pick the best one
-// Priority: Playing > Paused > anything else
-// Extracts: title, artist, album, artwork (base64), playback state,
-//           timeline, and source app ID.
+// PowerShell script: query all SMTC sessions, pick the best one
 // =================================================================
-const MEDIA_QUERY_SCRIPT = `
+const QUERY_SCRIPT_CONTENT = `
 Add-Type -AssemblyName System.Runtime.WindowsRuntime
 
-# Helper to await WinRT async operations from PowerShell
 $asTaskGeneric = ([System.WindowsRuntimeSystemExtensions].GetMethods() |
   Where-Object { $_.Name -eq 'AsTask' -and $_.GetParameters().Count -eq 1 -and $_.GetParameters()[0].ParameterType.Name -eq 'IAsyncOperation\`1' })[0]
 
@@ -31,20 +38,9 @@ Function Await($WinRtTask, $ResultType) {
   $netTask.Result
 }
 
-Function AwaitAction($WinRtTask) {
-  $asActionTask = ([System.WindowsRuntimeSystemExtensions].GetMethods() |
-    Where-Object { $_.Name -eq 'AsTask' -and $_.GetParameters().Count -eq 1 -and !$_.IsGenericMethod })[0]
-  $netTask = $asActionTask.Invoke($null, @($WinRtTask))
-  $netTask.Wait(-1) | Out-Null
-}
-
-# Load the WinRT type
 [void][Windows.Media.Control.GlobalSystemMediaTransportControlsSessionManager,Windows.Media.Control,ContentType=WindowsRuntime]
 
-# Request the session manager
 $mgr = Await ([Windows.Media.Control.GlobalSystemMediaTransportControlsSessionManager]::RequestAsync()) ([Windows.Media.Control.GlobalSystemMediaTransportControlsSessionManager])
-
-# Get ALL sessions (not just current)
 $sessions = $mgr.GetSessions()
 
 if ($sessions.Count -eq 0) {
@@ -52,21 +48,16 @@ if ($sessions.Count -eq 0) {
   exit
 }
 
-# Score each session: Playing=3, Paused=2, else=1
+# Score sessions: Playing=3, Paused=2, else=1
 $best = $null
 $bestScore = 0
-
 foreach ($s in $sessions) {
   $pb = $s.GetPlaybackInfo()
   $score = 1
-  $statusStr = [string]$pb.PlaybackStatus
-  if ($statusStr -eq 'Playing') { $score = 3 }
-  elseif ($statusStr -eq 'Paused') { $score = 2 }
-
-  if ($score -gt $bestScore) {
-    $bestScore = $score
-    $best = $s
-  }
+  $st = [string]$pb.PlaybackStatus
+  if ($st -eq 'Playing') { $score = 3 }
+  elseif ($st -eq 'Paused') { $score = 2 }
+  if ($score -gt $bestScore) { $bestScore = $score; $best = $s }
 }
 
 if ($null -eq $best) {
@@ -74,7 +65,6 @@ if ($null -eq $best) {
   exit
 }
 
-# Extract media properties from the best session
 $info = Await ($best.TryGetMediaPropertiesAsync()) ([Windows.Media.Control.GlobalSystemMediaTransportControlsSessionMediaProperties])
 $playback = $best.GetPlaybackInfo()
 $timeline = $best.GetTimelineProperties()
@@ -104,8 +94,8 @@ $obj = @{
   album          = [string]$info.AlbumTitle
   artwork        = $b64
   playbackStatus = [string]$playback.PlaybackStatus
-  position       = [math]::Round($timeline.Position.TotalSeconds, 1)
-  duration       = [math]::Round($timeline.EndTime.TotalSeconds, 1)
+  position       = [math]::Round($timeline.Position.TotalSeconds, 2)
+  duration       = [math]::Round($timeline.EndTime.TotalSeconds, 2)
   source         = [string]$best.SourceAppUserModelId
   sessionCount   = $sessions.Count
 }
@@ -113,9 +103,9 @@ $obj | ConvertTo-Json -Compress
 `;
 
 // =================================================================
-// PowerShell control commands — use the BEST session (same logic)
+// PowerShell script: send a control command to the best session
 // =================================================================
-function buildControlScript(action) {
+function buildControlScriptContent(action) {
   return `
 Add-Type -AssemblyName System.Runtime.WindowsRuntime
 $asTaskGeneric = ([System.WindowsRuntimeSystemExtensions].GetMethods() |
@@ -137,22 +127,80 @@ foreach ($s in $sessions) {
   if ($st -eq 'Playing') { $score = 3 } elseif ($st -eq 'Paused') { $score = 2 }
   if ($score -gt $bestScore) { $bestScore = $score; $best = $s }
 }
-if ($best) { $best.${action}.GetAwaiter().GetResult() | Out-Null }
+if ($best) {
+  ${action}
+}
 `;
 }
 
-const MEDIA_COMMANDS = {
-  'play-pause': buildControlScript('TryTogglePlayPauseAsync()'),
-  'next':       buildControlScript('TrySkipNextAsync()'),
-  'previous':   buildControlScript('TrySkipPreviousAsync()'),
-};
+// =================================================================
+// PowerShell script: seek to a specific position (in seconds)
+// =================================================================
+const SEEK_SCRIPT_CONTENT = `
+param([double]$SeekPosition)
+Add-Type -AssemblyName System.Runtime.WindowsRuntime
+$asTaskGeneric = ([System.WindowsRuntimeSystemExtensions].GetMethods() |
+  Where-Object { $_.Name -eq 'AsTask' -and $_.GetParameters().Count -eq 1 -and $_.GetParameters()[0].ParameterType.Name -eq 'IAsyncOperation\`1' })[0]
+Function Await($WinRtTask, $ResultType) {
+  $asTask = $asTaskGeneric.MakeGenericMethod($ResultType)
+  $netTask = $asTask.Invoke($null, @($WinRtTask))
+  $netTask.Wait(-1) | Out-Null
+  $netTask.Result
+}
+[void][Windows.Media.Control.GlobalSystemMediaTransportControlsSessionManager,Windows.Media.Control,ContentType=WindowsRuntime]
+$mgr = Await ([Windows.Media.Control.GlobalSystemMediaTransportControlsSessionManager]::RequestAsync()) ([Windows.Media.Control.GlobalSystemMediaTransportControlsSessionManager])
+$sessions = $mgr.GetSessions()
+$best = $null; $bestScore = 0
+foreach ($s in $sessions) {
+  $pb = $s.GetPlaybackInfo()
+  $score = 1
+  $st = [string]$pb.PlaybackStatus
+  if ($st -eq 'Playing') { $score = 3 } elseif ($st -eq 'Paused') { $score = 2 }
+  if ($score -gt $bestScore) { $bestScore = $score; $best = $s }
+}
+if ($best) {
+  $ticks = [long]($SeekPosition * 10000000)
+  $best.TryChangePlaybackPositionAsync($ticks).GetAwaiter().GetResult() | Out-Null
+}
+`;
 
 class MediaManager {
   constructor() {
     this.currentState = null;
     this.pollTimer = null;
-    this._lastStateStr = null;
+    this._lastStateKey = null;
+    this._lastArtwork = null;
     this._debounceTimer = null;
+    this._scriptPaths = {};
+    this._initScripts();
+  }
+
+  // Write all PS scripts to temp files once at startup
+  _initScripts() {
+    ensureScriptDir();
+
+    // Query script
+    const queryPath = path.join(PS_SCRIPT_DIR, 'query.ps1');
+    fs.writeFileSync(queryPath, QUERY_SCRIPT_CONTENT, 'utf8');
+    this._scriptPaths.query = queryPath;
+
+    // Control scripts
+    const actions = {
+      'play-pause': '$best.TryTogglePlayPauseAsync().GetAwaiter().GetResult() | Out-Null',
+      'next': '$best.TrySkipNextAsync().GetAwaiter().GetResult() | Out-Null',
+      'previous': '$best.TrySkipPreviousAsync().GetAwaiter().GetResult() | Out-Null',
+    };
+
+    for (const [cmd, action] of Object.entries(actions)) {
+      const p = path.join(PS_SCRIPT_DIR, `${cmd}.ps1`);
+      fs.writeFileSync(p, buildControlScriptContent(action), 'utf8');
+      this._scriptPaths[cmd] = p;
+    }
+
+    // Seek script
+    const seekPath = path.join(PS_SCRIPT_DIR, 'seek.ps1');
+    fs.writeFileSync(seekPath, SEEK_SCRIPT_CONTENT, 'utf8');
+    this._scriptPaths.seek = seekPath;
   }
 
   // ----------------------------------------------------------
@@ -164,34 +212,40 @@ class MediaManager {
     const poll = () => {
       this._queryMedia()
         .then((state) => {
-          // Debounce: if state changed, wait 150ms before broadcasting
-          // to avoid flicker during rapid track changes
-          const stateKey = `${state.title}|${state.artist}|${state.playbackStatus}`;
-          if (stateKey !== this._lastStateKey) {
-            this._lastStateKey = stateKey;
+          // Track changes: compare title+artist+status (not position)
+          const trackKey = `${state.title}|${state.artist}|${state.playbackStatus}`;
+
+          if (trackKey !== this._lastStateKey) {
+            // Track or status changed — debounce to avoid flicker
+            this._lastStateKey = trackKey;
             clearTimeout(this._debounceTimer);
             this._debounceTimer = setTimeout(() => {
               this.currentState = state;
               if (this.callback) this.callback(state);
-            }, 150);
+            }, 120);
           } else {
-            // Same track, just update position without debounce
+            // Same track — update position immediately (no debounce)
+            // But skip artwork in the payload if it hasn't changed
+            // to reduce IPC data transfer
+            if (state.artwork && state.artwork === this._lastArtwork) {
+              state.artwork = '__same__'; // sentinel value
+            } else if (state.artwork) {
+              this._lastArtwork = state.artwork;
+            }
             this.currentState = state;
             if (this.callback) this.callback(state);
           }
         })
         .catch(() => {
-          // On error (PowerShell not ready), send no_session
           const noSession = { status: 'no_session' };
-          if (this._lastStateKey !== 'no_session') {
-            this._lastStateKey = 'no_session';
+          if (this._lastStateKey !== '__no_session__') {
+            this._lastStateKey = '__no_session__';
             this.currentState = noSession;
             if (this.callback) this.callback(noSession);
           }
         });
     };
 
-    // Initial poll immediately
     poll();
     this.pollTimer = setInterval(poll, POLL_INTERVAL);
   }
@@ -209,16 +263,16 @@ class MediaManager {
   }
 
   // ----------------------------------------------------------
-  // Send a media control command to the active session
+  // Send a control command (play-pause, next, previous)
   // ----------------------------------------------------------
   sendCommand(command) {
-    const script = MEDIA_COMMANDS[command];
-    if (!script) return Promise.resolve(false);
+    const scriptPath = this._scriptPaths[command];
+    if (!scriptPath) return Promise.resolve(false);
 
     return new Promise((resolve) => {
       execFile(
         'powershell.exe',
-        ['-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-Command', script],
+        ['-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-File', scriptPath],
         { timeout: 8000 },
         (err) => resolve(!err)
       );
@@ -226,22 +280,39 @@ class MediaManager {
   }
 
   // ----------------------------------------------------------
-  // Internal: query current media session via PowerShell SMTC
+  // Seek to a specific position (in seconds)
+  // ----------------------------------------------------------
+  seekTo(positionSeconds) {
+    return new Promise((resolve) => {
+      execFile(
+        'powershell.exe',
+        [
+          '-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass',
+          '-File', this._scriptPaths.seek,
+          '-SeekPosition', String(positionSeconds),
+        ],
+        { timeout: 8000 },
+        (err) => resolve(!err)
+      );
+    });
+  }
+
+  // ----------------------------------------------------------
+  // Internal: query current media session via PowerShell
   // ----------------------------------------------------------
   _queryMedia() {
     return new Promise((resolve, reject) => {
       execFile(
         'powershell.exe',
-        ['-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-Command', MEDIA_QUERY_SCRIPT],
+        ['-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-File', this._scriptPaths.query],
         { timeout: 8000 },
-        (err, stdout, stderr) => {
+        (err, stdout) => {
           if (err) return reject(err);
           try {
             const raw = stdout.trim();
-            // Find the JSON object in the output (skip any warnings)
             const jsonStart = raw.indexOf('{');
             const jsonEnd = raw.lastIndexOf('}');
-            if (jsonStart === -1) return reject(new Error('No JSON in output'));
+            if (jsonStart === -1) return reject(new Error('No JSON'));
             const data = JSON.parse(raw.substring(jsonStart, jsonEnd + 1));
             resolve(data);
           } catch (e) {

@@ -1,8 +1,7 @@
 // ============================================================
-// App Root
-// Manages global state (media, calendar, active mode),
-// extracts dominant color from album art, and renders
-// the DynamicIsland component with live data.
+// App Root — v3
+// Handles media state with artwork caching, dominant color
+// extraction with smooth transitions, and seek control.
 // ============================================================
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
@@ -12,44 +11,57 @@ import { extractDominantColor } from './utils/colorExtractor';
 function App() {
   const [mediaState, setMediaState] = useState(null);
   const [calendarEvents, setCalendarEvents] = useState([]);
-  const [mode, setMode] = useState('music'); // 'music' | 'calendar'
+  const [mode, setMode] = useState('music');
   const [accentColor, setAccentColor] = useState('#ffffff');
 
-  // Track the last artwork we extracted color from to avoid redundant work
-  const lastArtworkRef = useRef(null);
+  // Cache artwork so we don't lose it when receiving '__same__' sentinel
+  const cachedArtworkRef = useRef(null);
+  const lastColorArtRef = useRef(null);
 
   // ----------------------------------------------------------
-  // Subscribe to real-time media updates from the main process
+  // Subscribe to media updates
   // ----------------------------------------------------------
   useEffect(() => {
-    // Get initial state
     window.electronAPI?.getMediaState().then((state) => {
-      if (state) setMediaState(state);
+      if (state) handleMediaUpdate(state);
     });
 
-    // Listen for live updates
     const unsub = window.electronAPI?.onMediaUpdate((state) => {
-      setMediaState(state);
+      handleMediaUpdate(state);
     });
 
     return () => unsub?.();
   }, []);
 
-  // ----------------------------------------------------------
-  // Extract dominant color whenever artwork changes
-  // ----------------------------------------------------------
-  useEffect(() => {
-    const artwork = mediaState?.artwork;
-    if (!artwork || artwork === lastArtworkRef.current) return;
-    lastArtworkRef.current = artwork;
+  // Process media updates — handle artwork caching
+  const handleMediaUpdate = useCallback((state) => {
+    if (!state) return;
 
-    extractDominantColor(artwork).then((color) => {
-      setAccentColor(color.hex);
-    });
-  }, [mediaState?.artwork]);
+    if (state.artwork === '__same__') {
+      // Artwork unchanged — use cached version
+      state.artwork = cachedArtworkRef.current;
+    } else if (state.artwork && state.artwork.length > 10) {
+      // New artwork — cache it and extract color
+      cachedArtworkRef.current = state.artwork;
+
+      if (state.artwork !== lastColorArtRef.current) {
+        lastColorArtRef.current = state.artwork;
+        extractDominantColor(state.artwork).then((color) => {
+          setAccentColor(color.hex);
+        });
+      }
+    } else if (!state.artwork || state.artwork.length < 10) {
+      // No artwork — keep cache if same track
+      if (cachedArtworkRef.current) {
+        state.artwork = cachedArtworkRef.current;
+      }
+    }
+
+    setMediaState({ ...state });
+  }, []);
 
   // ----------------------------------------------------------
-  // Subscribe to calendar event updates
+  // Subscribe to calendar
   // ----------------------------------------------------------
   useEffect(() => {
     window.electronAPI?.getCalendarEvents().then((events) => {
@@ -64,7 +76,7 @@ function App() {
   }, []);
 
   // ----------------------------------------------------------
-  // Media control handlers (forwarded to main process via IPC)
+  // Handlers
   // ----------------------------------------------------------
   const handlePlayPause = useCallback(() => {
     window.electronAPI?.mediaPlayPause();
@@ -78,18 +90,16 @@ function App() {
     window.electronAPI?.mediaPrevious();
   }, []);
 
-  // ----------------------------------------------------------
-  // Open the source app (click on album art)
-  // ----------------------------------------------------------
+  const handleSeek = useCallback((positionSeconds) => {
+    window.electronAPI?.mediaSeek(positionSeconds);
+  }, []);
+
   const handleOpenSource = useCallback(() => {
     if (mediaState?.source) {
       window.electronAPI?.openSourceApp(mediaState.source);
     }
   }, [mediaState?.source]);
 
-  // ----------------------------------------------------------
-  // Toggle between music and calendar modes
-  // ----------------------------------------------------------
   const toggleMode = useCallback(() => {
     setMode((prev) => (prev === 'music' ? 'calendar' : 'music'));
   }, []);
@@ -103,6 +113,7 @@ function App() {
       onPlayPause={handlePlayPause}
       onNext={handleNext}
       onPrevious={handlePrevious}
+      onSeek={handleSeek}
       onOpenSource={handleOpenSource}
       onToggleMode={toggleMode}
     />

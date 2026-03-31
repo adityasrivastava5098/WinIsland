@@ -1,18 +1,16 @@
 // ============================================================
-// Dynamic Island — Main UI Component (Rewritten)
-// Pure black pill with smooth expand/collapse.
-// Collapsed: circular album art (left) + waveform bars (right)
-// Expanded: full music player or calendar grid.
-// Click outside → auto-collapse. Click inside → toggle.
+// Dynamic Island — Main UI Component (v3)
+// Pure black pill. Click to expand, click outside to collapse.
+// Collapsed: circular album art + color-synced waveform bars
+// Expanded: full music player or calendar grid
 // ============================================================
 
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import MusicWidget from './MusicWidget';
 import CalendarWidget from './CalendarWidget';
 import SoundWave from './SoundWave';
 
-// Spring animation for Apple-like feel
 const SPRING = { type: 'spring', stiffness: 380, damping: 28 };
 
 function DynamicIsland({
@@ -23,18 +21,18 @@ function DynamicIsland({
   onPlayPause,
   onNext,
   onPrevious,
+  onSeek,
   onOpenSource,
   onToggleMode,
 }) {
   const [isExpanded, setIsExpanded] = useState(false);
   const islandRef = useRef(null);
 
-  // Determine if music is actively playing
   const isPlaying = mediaState?.playbackStatus === 'Playing';
   const hasMedia = mediaState && mediaState.status !== 'no_session';
 
   // ----------------------------------------------------------
-  // Click-outside handler: collapse when clicking anywhere outside
+  // Click-outside: detect clicks on the transparent body
   // ----------------------------------------------------------
   useEffect(() => {
     if (!isExpanded) return;
@@ -45,15 +43,24 @@ function DynamicIsland({
       }
     };
 
-    // Use a small delay so the expand click doesn't immediately collapse
+    // Small delay to prevent the expand-click from immediately triggering collapse
     const timer = setTimeout(() => {
-      document.addEventListener('mousedown', handleClickOutside);
-    }, 100);
+      document.addEventListener('mousedown', handleClickOutside, true);
+    }, 150);
 
     return () => {
       clearTimeout(timer);
-      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('mousedown', handleClickOutside, true);
     };
+  }, [isExpanded]);
+
+  // Also collapse on window blur (user clicked outside the Electron window)
+  useEffect(() => {
+    if (!isExpanded) return;
+
+    const handleBlur = () => setIsExpanded(false);
+    window.addEventListener('blur', handleBlur);
+    return () => window.removeEventListener('blur', handleBlur);
   }, [isExpanded]);
 
   // Dynamic dimensions
@@ -61,12 +68,14 @@ function DynamicIsland({
     if (isExpanded) {
       return { width: 360, height: 200, borderRadius: 32 };
     }
-    // Collapsed pill — compact
     return { width: hasMedia ? 200 : 120, height: 40, borderRadius: 20 };
   }, [isExpanded, hasMedia]);
 
+  // Collapse handler
+  const collapse = useCallback(() => setIsExpanded(false), []);
+
   // ----------------------------------------------------------
-  // Collapsed pill content — circular art + waveform
+  // Collapsed content
   // ----------------------------------------------------------
   const renderCollapsed = () => {
     if (hasMedia) {
@@ -78,8 +87,8 @@ function DynamicIsland({
           exit={{ opacity: 0 }}
           transition={{ duration: 0.15 }}
         >
-          {/* Circular album art (left) */}
-          {mediaState.artwork ? (
+          {/* Circular album art */}
+          {mediaState.artwork && mediaState.artwork.length > 20 ? (
             <img
               src={`data:image/jpeg;base64,${mediaState.artwork}`}
               alt=""
@@ -95,16 +104,14 @@ function DynamicIsland({
             </div>
           )}
 
-          {/* Spacer pushes waveform to the right */}
           <div className="island-collapsed-spacer" />
 
-          {/* Animated waveform bars (right) — colored by dominant color */}
+          {/* Sound wave — colored by dominant album color */}
           {isPlaying && <SoundWave color={accentColor} size="large" />}
         </motion.div>
       );
     }
 
-    // Idle state — minimal dot
     return (
       <motion.div
         className="island-collapsed-content island-idle"
@@ -134,12 +141,13 @@ function DynamicIsland({
         }}
         style={{ cursor: isExpanded ? 'default' : 'pointer' }}
       >
-        {/* Subtle outer glow (iOS-style) */}
-        <div className="island-glow" style={{
-          boxShadow: isPlaying && accentColor !== '#ffffff'
-            ? `0 0 20px ${accentColor}22, 0 0 60px ${accentColor}11`
-            : '0 0 20px rgba(0,0,0,0.5)',
-        }} />
+        {/* Accent glow */}
+        <div
+          className="island-glow"
+          style={{
+            '--glow-color': isPlaying && accentColor !== '#ffffff' ? accentColor : 'transparent',
+          }}
+        />
 
         <AnimatePresence mode="wait">
           {isExpanded ? (
@@ -159,20 +167,21 @@ function DynamicIsland({
                   onPlayPause={onPlayPause}
                   onNext={onNext}
                   onPrevious={onPrevious}
+                  onSeek={onSeek}
                   onOpenSource={onOpenSource}
                 />
               ) : (
                 <CalendarWidget events={calendarEvents} />
               )}
 
-              {/* Mode toggle button */}
+              {/* Mode toggle */}
               <button
                 className="island-mode-toggle"
                 onClick={(e) => {
                   e.stopPropagation();
                   onToggleMode();
                 }}
-                title={mode === 'music' ? 'Switch to Calendar' : 'Switch to Music'}
+                title={mode === 'music' ? 'Calendar' : 'Music'}
               >
                 {mode === 'music' ? (
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">

@@ -1,8 +1,5 @@
 // ============================================================
-// Preload Script
-// Exposes a safe, sandboxed API to the renderer process via
-// contextBridge. The renderer never has direct access to Node
-// or Electron APIs — everything goes through this bridge.
+// Preload — Secure IPC bridge between renderer and main process
 // ============================================================
 
 const { contextBridge, ipcRenderer } = require('electron');
@@ -12,15 +9,16 @@ contextBridge.exposeInMainWorld('electronAPI', {
   mediaPlayPause: () => ipcRenderer.invoke('media-play-pause'),
   mediaNext: () => ipcRenderer.invoke('media-next'),
   mediaPrevious: () => ipcRenderer.invoke('media-previous'),
+  mediaSeek: (posSeconds) => ipcRenderer.invoke('media-seek', posSeconds),
   getMediaState: () => ipcRenderer.invoke('get-media-state'),
 
-  // ---- Open source app (Spotify, Apple Music, etc.) ----
+  // ---- Open source app ----
   openSourceApp: (sourceId) => ipcRenderer.invoke('open-source-app', sourceId),
 
   // ---- Calendar ----
   getCalendarEvents: () => ipcRenderer.invoke('get-calendar-events'),
 
-  // ---- Real-time updates from main process ----
+  // ---- Real-time updates ----
   onMediaUpdate: (callback) => {
     const handler = (_event, data) => callback(data);
     ipcRenderer.on('media-update', handler);

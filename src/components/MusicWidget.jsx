@@ -1,14 +1,14 @@
 // ============================================================
-// Music Widget — Expanded View (Redesigned)
-// Matches iPhone Dynamic Island reference:
-//   - Album art (left, clickable to open source app)
+// Music Widget — Expanded View (v3)
+// Clean design:
+//   - Album art (left, clickable → opens source app)
 //   - Title + artist (right)
-//   - Link icon (top right)
-//   - Full-width seekbar with current/total time
-//   - Centered playback controls (prev | play/pause | next)
+//   - Interactive seekbar (drag to seek)
+//   - Centered playback controls
+// NO link icon. Minimal and premium.
 // ============================================================
 
-import React from 'react';
+import React, { useRef, useCallback, useState } from 'react';
 import { motion } from 'framer-motion';
 
 function MusicWidget({
@@ -18,8 +18,13 @@ function MusicWidget({
   onPlayPause,
   onNext,
   onPrevious,
+  onSeek,
   onOpenSource,
 }) {
+  const seekTrackRef = useRef(null);
+  const [isSeeking, setIsSeeking] = useState(false);
+  const [seekPreview, setSeekPreview] = useState(null);
+
   if (!mediaState || mediaState.status === 'no_session') {
     return (
       <div className="music-widget music-empty">
@@ -35,26 +40,61 @@ function MusicWidget({
     );
   }
 
-  const progress =
-    mediaState.duration > 0
-      ? (mediaState.position / mediaState.duration) * 100
-      : 0;
+  const duration = mediaState.duration || 0;
+  const position = isSeeking ? seekPreview : (mediaState.position || 0);
+  const progress = duration > 0 ? (position / duration) * 100 : 0;
+  const barColor = accentColor !== '#ffffff' ? accentColor : '#fff';
 
-  // Determine friendly source name
+  // ----------------------------------------------------------
+  // Interactive seekbar handlers
+  // ----------------------------------------------------------
+  const getSeekPosition = useCallback((clientX) => {
+    if (!seekTrackRef.current || !duration) return 0;
+    const rect = seekTrackRef.current.getBoundingClientRect();
+    const ratio = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
+    return ratio * duration;
+  }, [duration]);
+
+  const handleSeekStart = useCallback((e) => {
+    e.stopPropagation();
+    e.preventDefault();
+    setIsSeeking(true);
+    const pos = getSeekPosition(e.clientX);
+    setSeekPreview(pos);
+
+    const handleMove = (ev) => {
+      const p = getSeekPosition(ev.clientX);
+      setSeekPreview(p);
+    };
+
+    const handleUp = (ev) => {
+      const p = getSeekPosition(ev.clientX);
+      setIsSeeking(false);
+      setSeekPreview(null);
+      onSeek?.(p);
+      document.removeEventListener('mousemove', handleMove);
+      document.removeEventListener('mouseup', handleUp);
+    };
+
+    document.addEventListener('mousemove', handleMove);
+    document.addEventListener('mouseup', handleUp);
+  }, [getSeekPosition, onSeek]);
+
+  // Source name for tooltip
   const sourceName = getSourceName(mediaState.source);
 
   return (
     <div className="music-widget">
-      {/* Top row: album art + track info + link icon */}
+      {/* Top row: album art + track info */}
       <div className="music-top-row">
-        {/* Album art — clickable to open source app */}
+        {/* Album art — click to open source app */}
         <div
           className="music-art-container"
           onClick={(e) => { e.stopPropagation(); onOpenSource?.(); }}
           title={`Open ${sourceName}`}
           style={{ cursor: 'pointer' }}
         >
-          {mediaState.artwork ? (
+          {mediaState.artwork && mediaState.artwork.length > 20 ? (
             <img
               src={`data:image/jpeg;base64,${mediaState.artwork}`}
               alt="Album Art"
@@ -70,11 +110,11 @@ function MusicWidget({
             </div>
           )}
 
-          {/* Subtle glow behind art when playing */}
+          {/* Accent glow behind art */}
           {isPlaying && (
             <div
               className="music-art-glow"
-              style={{ background: `${accentColor}40` }}
+              style={{ background: `${barColor}40` }}
             />
           )}
         </div>
@@ -84,43 +124,35 @@ function MusicWidget({
           <span className="music-title">{mediaState.title || 'Unknown Track'}</span>
           <span className="music-artist">{mediaState.artist || 'Unknown Artist'}</span>
         </div>
-
-        {/* Link/source icon */}
-        <button
-          className="music-link-btn"
-          onClick={(e) => { e.stopPropagation(); onOpenSource?.(); }}
-          title={`Open in ${sourceName}`}
-        >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-            <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
-            <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
-          </svg>
-        </button>
       </div>
 
-      {/* Seekbar — full width */}
+      {/* Interactive seekbar */}
       <div className="music-seekbar-container">
-        <div className="music-seekbar-track">
+        <div
+          ref={seekTrackRef}
+          className="music-seekbar-track"
+          onMouseDown={handleSeekStart}
+          style={{ cursor: 'pointer' }}
+        >
           <motion.div
             className="music-seekbar-fill"
-            animate={{ width: `${progress}%` }}
-            transition={{ duration: 0.8, ease: 'linear' }}
-            style={{ background: accentColor !== '#ffffff' ? accentColor : '#fff' }}
+            style={{
+              width: `${progress}%`,
+              background: barColor,
+            }}
           />
-          {/* Seekbar thumb */}
           <motion.div
             className="music-seekbar-thumb"
-            animate={{ left: `${progress}%` }}
-            transition={{ duration: 0.8, ease: 'linear' }}
+            style={{ left: `${progress}%` }}
           />
         </div>
         <div className="music-time">
-          <span>{formatTime(mediaState.position)}</span>
-          <span>{formatTime(mediaState.duration)}</span>
+          <span>{formatTime(position)}</span>
+          <span>{formatTime(duration)}</span>
         </div>
       </div>
 
-      {/* Playback controls — centered */}
+      {/* Centered playback controls */}
       <div className="music-controls">
         <button
           className="music-btn"
@@ -162,7 +194,6 @@ function MusicWidget({
   );
 }
 
-// Format seconds to mm:ss
 function formatTime(seconds) {
   if (!seconds || seconds < 0) return '0:00';
   const mins = Math.floor(seconds / 60);
@@ -170,7 +201,6 @@ function formatTime(seconds) {
   return `${mins}:${secs.toString().padStart(2, '0')}`;
 }
 
-// Map SMTC source app ID to friendly name
 function getSourceName(source) {
   if (!source) return 'Media Player';
   const s = source.toLowerCase();
@@ -180,7 +210,7 @@ function getSourceName(source) {
   if (s.includes('edge') || s.includes('msedge')) return 'Edge';
   if (s.includes('firefox')) return 'Firefox';
   if (s.includes('vlc')) return 'VLC';
-  if (s.includes('zunemusic') || s.includes('groove')) return 'Groove Music';
+  if (s.includes('zunemusic') || s.includes('groove')) return 'Groove';
   return 'Media Player';
 }
 
