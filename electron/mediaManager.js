@@ -70,17 +70,41 @@ $playback = $best.GetPlaybackInfo()
 $timeline = $best.GetTimelineProperties()
 
 # Extract album artwork as base64
+# Some apps (Apple Music) report stream.Size=0, so we use chunked read
 $b64 = ""
 if ($null -ne $info.Thumbnail) {
   try {
     $stream = Await ($info.Thumbnail.OpenReadAsync()) ([Windows.Storage.Streams.IRandomAccessStreamWithContentType])
     $size = $stream.Size
+
     if ($size -gt 0 -and $size -lt 10000000) {
-      $reader = New-Object Windows.Storage.Streams.DataReader($stream)
+      # Size is known — read directly
+      $reader = New-Object Windows.Storage.Streams.DataReader($stream.GetInputStreamAt(0))
       Await ($reader.LoadAsync([uint32]$size)) ([uint32])
       $bytes = New-Object byte[] $size
       $reader.ReadBytes($bytes)
       $b64 = [Convert]::ToBase64String($bytes)
+      $reader.Dispose()
+    } else {
+      # Size unknown — chunked read via DataReader
+      $inputStream = $stream.GetInputStreamAt(0)
+      $reader = New-Object Windows.Storage.Streams.DataReader($inputStream)
+      $reader.InputStreamOptions = [Windows.Storage.Streams.InputStreamOptions]::Partial
+      $allBytes = New-Object System.Collections.Generic.List[byte]
+      $chunkSize = [uint32]8192
+      
+      do {
+        $loaded = Await ($reader.LoadAsync($chunkSize)) ([uint32])
+        if ($loaded -gt 0) {
+          $chunk = New-Object byte[] $loaded
+          $reader.ReadBytes($chunk)
+          $allBytes.AddRange($chunk)
+        }
+      } while ($loaded -eq $chunkSize -and $allBytes.Count -lt 10000000)
+      
+      if ($allBytes.Count -gt 0) {
+        $b64 = [Convert]::ToBase64String($allBytes.ToArray())
+      }
       $reader.Dispose()
     }
     $stream.Dispose()
