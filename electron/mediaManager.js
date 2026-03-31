@@ -64,7 +64,7 @@ foreach ($s in $sessions) {
   $st = [string]$pb.PlaybackStatus
   if ($st -eq 'Playing') { $score = 3 }
   elseif ($st -eq 'Paused') { $score = 2 }
-  
+
   if ($score -gt $bestScore) {
     $bestScore = $score; $best = $s
   }
@@ -85,7 +85,7 @@ if ($null -ne $info.Thumbnail) {
   try {
     $asStreamForReadMethod = ([System.IO.WindowsRuntimeStreamExtensions].GetMethods() | Where-Object { $_.Name -eq 'AsStreamForRead' -and $_.GetParameters().Count -eq 1 })[0]
     $stream = Await ($info.Thumbnail.OpenReadAsync()) ([Windows.Storage.Streams.IRandomAccessStreamWithContentType])
-    
+
     if ($null -ne $stream -and $null -ne $asStreamForReadMethod) {
       $netStream = $asStreamForReadMethod.Invoke($null, @($stream))
       $ms = New-Object System.IO.MemoryStream
@@ -328,7 +328,7 @@ class MediaManager {
             const jsonEnd = raw.lastIndexOf('}');
             if (jsonStart === -1) return resolve({ status: 'no_session', title: '', artist: '' });
             const data = JSON.parse(raw.substring(jsonStart, jsonEnd + 1));
-            
+
             // Decode Base64 strings to UTF-8
             if (data.status === 'active') {
               if (data.title) data.title = Buffer.from(data.title, 'base64').toString('utf8');

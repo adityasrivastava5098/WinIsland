@@ -111,6 +111,13 @@ function App() {
     }
   }, [mediaState?.source]);
 
+  // Force a fresh media snapshot when the island expands.
+  const handleExpandRefresh = useCallback(() => {
+    window.electronAPI?.getMediaState().then((state) => {
+      if (state) handleMediaUpdate(state);
+    });
+  }, [handleMediaUpdate]);
+
   // ----------------------------------------------------------
   // Toggle between music and calendar modes
   // ----------------------------------------------------------
@@ -130,6 +137,7 @@ function App() {
       onSeek={handleSeek}
       onOpenSource={handleOpenSource}
       onToggleMode={toggleMode}
+      onExpandRefresh={handleExpandRefresh}
     />
   );
 }

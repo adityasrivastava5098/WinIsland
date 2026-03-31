@@ -6,3 +6,4 @@ dist-electron/
 .DS_Store
 Thumbs.db
 .winisland_data/
+package-lock.json

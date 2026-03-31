@@ -52,7 +52,9 @@ let mediaManager = null;
 let calendarManager = null;
 let trayManager = null;
 
-const isDev = process.env.NODE_ENV === 'development';
+// Treat local (unpackaged) runs as development by default.
+// This avoids accidental file://dist/index.html loads when running `npx electron .`.
+const isDev = !app.isPackaged && process.env.NODE_ENV !== 'production';
 
 // ============================================================
 // App ready

@@ -24,6 +24,7 @@ function DynamicIsland({
   onSeek,
   onOpenSource,
   onToggleMode,
+  onExpandRefresh,
 }) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [shouldShowMedia, setShouldShowMedia] = useState(false);
@@ -213,6 +214,7 @@ function DynamicIsland({
           if (!isExpanded) {
             // Reset to music mode if opening
             if (mode !== 'music') onToggleMode();
+            onExpandRefresh?.();
             setIsExpanded(true);
           }
         }}
