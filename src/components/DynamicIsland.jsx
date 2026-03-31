@@ -34,6 +34,34 @@ function DynamicIsland({
   const hasMedia = mediaState && mediaState.status !== 'no_session';
 
   // ----------------------------------------------------------
+  // Linger logic: keep music pill for 1 min after playback stops/pauses
+  // ----------------------------------------------------------
+  useEffect(() => {
+    if (isPlaying) {
+      setShouldShowMedia(true);
+      if (lingerTimerRef.current) {
+        clearTimeout(lingerTimerRef.current);
+        lingerTimerRef.current = null;
+      }
+    } else if (hasMedia && shouldShowMedia) {
+      // If paused, shrink back to circle after 60 seconds of inactivity
+      if (!lingerTimerRef.current) {
+        lingerTimerRef.current = setTimeout(() => {
+          setShouldShowMedia(false);
+          lingerTimerRef.current = null;
+        }, 60000); // 1 minute
+      }
+    } else if (!hasMedia) {
+      // No session: shrink immediately
+      setShouldShowMedia(false);
+      if (lingerTimerRef.current) {
+        clearTimeout(lingerTimerRef.current);
+        lingerTimerRef.current = null;
+      }
+    }
+  }, [isPlaying, hasMedia]);
+
+  // ----------------------------------------------------------
   // Interactions: Click-outside and Window Blur
   // ----------------------------------------------------------
   useEffect(() => {
@@ -69,9 +97,9 @@ function DynamicIsland({
     if (isExpanded) {
       return { width: 360, height: 200, borderRadius: 32 };
     }
-    // Collapsed: always stay as a sleek 160px pill (music-style)
-    return { width: 160, height: 40, borderRadius: 20 };
-  }, [isExpanded]);
+    // Collapsed: show 160px pill if media active, or 40px circle if idle
+    return { width: shouldShowMedia ? 160 : 40, height: 40, borderRadius: 20 };
+  }, [isExpanded, shouldShowMedia]);
 
   useEffect(() => {
     if (isExpanded) {
@@ -84,42 +112,59 @@ function DynamicIsland({
   const collapse = useCallback(() => setIsExpanded(false), []);
 
   // ----------------------------------------------------------
-  // Collapsed content (Always show the pill layout)
+  // Collapsed content
   // ----------------------------------------------------------
   const renderCollapsed = () => {
+    if (shouldShowMedia) {
+      return (
+        <motion.div
+          key="pill"
+          className="island-collapsed-content"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.2 }}
+        >
+          {/* Circular artwork or placeholder */}
+          {mediaState?.artwork && mediaState.artwork.length > 20 ? (
+            <img
+              src={`data:image/jpeg;base64,${mediaState.artwork}`}
+              alt=""
+              className="island-thumb-circle"
+            />
+          ) : (
+            <div className="island-thumb-circle island-thumb-placeholder">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M9 18V5l12-2v13" />
+                <circle cx="6" cy="18" r="3" />
+                <circle cx="18" cy="16" r="3" />
+              </svg>
+            </div>
+          )}
+
+          <div className="island-collapsed-spacer" />
+
+          {/* Status indicator: waveform if playing, pulse if paused */}
+          {isPlaying ? (
+            <SoundWave color={accentColor} size="large" />
+          ) : (
+            <div className="island-idle-dot" style={{ opacity: 0.6 }} />
+          )}
+        </motion.div>
+      );
+    }
+
+    // Small Circle (Idle State)
     return (
       <motion.div
-        className="island-collapsed-content"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        transition={{ duration: 0.2 }}
+        key="circle"
+        className="island-collapsed-content island-idle"
+        initial={{ opacity: 0, scale: 0.8 }}
+        animate={{ opacity: 1, scale: 1 }}
+        exit={{ opacity: 0, scale: 0.8 }}
+        style={{ width: '40px', justifyContent: 'center', padding: 0 }}
       >
-        {/* Circular artwork or placeholder */}
-        {mediaState?.artwork && mediaState.artwork.length > 20 ? (
-          <img
-            src={`data:image/jpeg;base64,${mediaState.artwork}`}
-            alt=""
-            className="island-thumb-circle"
-          />
-        ) : (
-          <div className="island-thumb-circle island-thumb-placeholder">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M9 18V5l12-2v13" />
-              <circle cx="6" cy="18" r="3" />
-              <circle cx="18" cy="16" r="3" />
-            </svg>
-          </div>
-        )}
-
-        <div className="island-collapsed-spacer" />
-
-        {/* Status indicator: animation if playing, pulsed capsule if idle */}
-        {isPlaying ? (
-          <SoundWave color={accentColor} size="large" />
-        ) : (
-          <div className="island-idle-dot" />
-        )}
+        <div className="island-idle-dot" />
       </motion.div>
     );
   };
