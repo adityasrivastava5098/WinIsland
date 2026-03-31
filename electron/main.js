@@ -20,6 +20,11 @@ app.commandLine.appendSwitch('disable-gpu-compositing');
 app.commandLine.appendSwitch('disable-gpu-rasterization');
 app.commandLine.appendSwitch('disable-gpu-sandbox');
 app.commandLine.appendSwitch('no-sandbox'); // Necessary for some permission-locked environments
+
+// ---- Custom Data Path (Fixes "Access Denied" Cache Errors) ----
+// By moving the user data to a local project folder, we bypass restricted %AppData% permissions
+const userDataPath = path.join(process.cwd(), '.winisland_data');
+app.setPath('userData', userDataPath);
 // ----------------------------------
 
 // Prevent multiple instances

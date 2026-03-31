@@ -26,9 +26,12 @@ echo.
 echo Launching WinIsland...
 set NODE_ENV=development
 
-:: Try to clean common cache if it exists (fixes "Unable to create cache" errors)
-if exist "%AppData%\winisland\Cache" (
-    rmdir /S /Q "%AppData%\winisland\Cache" > nul 2>&1
+:: Force close any existing Electron instances for this app
+taskkill /F /IM electron.exe /T > nul 2>&1
+
+:: Clean the NEW local data directory if it's corrupted
+if exist ".winisland_data" (
+    rmdir /S /Q ".winisland_data" > nul 2>&1
 )
 
 npx electron . --disable-gpu --disable-software-rasterizer
