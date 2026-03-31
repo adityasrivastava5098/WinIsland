@@ -26,7 +26,8 @@ function ensureScriptDir() {
 // PowerShell script: query all SMTC sessions, pick the best one
 // =================================================================
 const QUERY_SCRIPT_CONTENT = `
-[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+$OutputEncoding = [System.Text.UTF8Encoding]::new($false)
+[Console]::OutputEncoding = [System.Text.UTF8Encoding]::new($false)
 Add-Type -AssemblyName System.Runtime.WindowsRuntime
 
 $asTaskGeneric = ([System.WindowsRuntimeSystemExtensions].GetMethods() |
