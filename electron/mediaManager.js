@@ -105,9 +105,9 @@ if ($null -ne $info.Thumbnail) {
 
 $obj = @{
   status         = "active"
-  title          = [Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes($info.Title))
-  artist         = [Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes($info.Artist))
-  album          = [Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes($info.AlbumTitle))
+  title          = [Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes([string]$info.Title))
+  artist         = [Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes([string]$info.Artist))
+  album          = [Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes([string]$info.AlbumTitle))
   artwork        = $b64
   playbackStatus = [string]$playback.PlaybackStatus
   position       = [math]::Round($timeline.Position.TotalSeconds, 2)
