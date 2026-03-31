@@ -1,0 +1,526 @@
+/* =============================================================
+   Dynamic Island — Global Styles
+   Premium dark-mode design with acrylic blur, smooth animations,
+   and a pill-shaped UI inspired by Apple's Dynamic Island.
+   ============================================================= */
+
+/* ---- Reset & Base ---- */
+*, *::before, *::after {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+:root {
+  /* Color tokens */
+  --island-bg: rgba(16, 16, 18, 0.88);
+  --island-bg-solid: #101012;
+  --island-border: rgba(255, 255, 255, 0.08);
+  --island-shine: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.1) 0%,
+    rgba(255, 255, 255, 0.02) 50%,
+    transparent 100%
+  );
+  --text-primary: #f0f0f2;
+  --text-secondary: rgba(255, 255, 255, 0.55);
+  --text-tertiary: rgba(255, 255, 255, 0.35);
+  --accent: #6366f1;
+  --accent-glow: rgba(99, 102, 241, 0.3);
+  --progress-bg: rgba(255, 255, 255, 0.1);
+  --progress-fill: #6366f1;
+  --btn-hover: rgba(255, 255, 255, 0.1);
+  --btn-active: rgba(255, 255, 255, 0.15);
+
+  /* Typography */
+  --font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+
+  /* Sizing */
+  --art-size: 60px;
+  --thumb-size: 22px;
+}
+
+html, body, #root {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: transparent;
+  font-family: var(--font);
+  -webkit-font-smoothing: antialiased;
+  user-select: none;
+  -webkit-app-region: no-drag;
+}
+
+/* =============================================================
+   Island Container — centers the pill at the top of the window
+   ============================================================= */
+.island-container {
+  display: flex;
+  justify-content: center;
+  padding-top: 6px;
+  width: 100%;
+}
+
+/* =============================================================
+   Island — The main pill-shaped element
+   ============================================================= */
+.island {
+  position: relative;
+  background: var(--island-bg);
+  border: 1px solid var(--island-border);
+  backdrop-filter: blur(40px) saturate(180%);
+  -webkit-backdrop-filter: blur(40px) saturate(180%);
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow:
+    0 4px 24px rgba(0, 0, 0, 0.4),
+    0 1px 3px rgba(0, 0, 0, 0.3),
+    inset 0 0.5px 0 rgba(255, 255, 255, 0.08);
+  transition: box-shadow 0.3s ease;
+}
+
+.island:hover {
+  box-shadow:
+    0 8px 40px rgba(0, 0, 0, 0.5),
+    0 2px 8px rgba(0, 0, 0, 0.3),
+    inset 0 0.5px 0 rgba(255, 255, 255, 0.1);
+}
+
+/* Glossy shine overlay on the top edge */
+.island-shine {
+  position: absolute;
+  inset: 0;
+  background: var(--island-shine);
+  pointer-events: none;
+  z-index: 10;
+}
+
+/* =============================================================
+   Collapsed Content — pill shows minimal info
+   ============================================================= */
+.island-collapsed-content {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 14px;
+  width: 100%;
+  height: 100%;
+}
+
+/* Album art thumbnail in collapsed state */
+.island-thumb {
+  width: var(--thumb-size);
+  height: var(--thumb-size);
+  border-radius: 6px;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.island-thumb-placeholder {
+  background: rgba(255, 255, 255, 0.08);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-secondary);
+}
+
+.island-collapsed-text {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.island-collapsed-title {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: block;
+  letter-spacing: -0.01em;
+}
+
+/* Calendar icon in collapsed state */
+.island-calendar-icon {
+  width: var(--thumb-size);
+  height: var(--thumb-size);
+  border-radius: 6px;
+  background: rgba(99, 102, 241, 0.15);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--accent);
+  flex-shrink: 0;
+}
+
+/* Time remaining badge */
+.island-time-badge {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--accent);
+  background: rgba(99, 102, 241, 0.12);
+  padding: 2px 7px;
+  border-radius: 8px;
+  flex-shrink: 0;
+  letter-spacing: 0.02em;
+}
+
+/* Idle state dot */
+.island-idle {
+  justify-content: center;
+}
+
+.island-idle-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--text-tertiary);
+  animation: pulse-idle 2s ease-in-out infinite;
+}
+
+@keyframes pulse-idle {
+  0%, 100% { opacity: 0.4; transform: scale(1); }
+  50% { opacity: 0.8; transform: scale(1.3); }
+}
+
+/* =============================================================
+   Expanded Content — shows full widget
+   ============================================================= */
+.island-expanded-content {
+  width: 100%;
+  height: 100%;
+  padding: 14px;
+  position: relative;
+}
+
+/* Mode toggle button (switch between music/calendar) */
+.island-mode-toggle {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  z-index: 5;
+}
+
+.island-mode-toggle:hover {
+  background: var(--btn-hover);
+  color: var(--text-primary);
+  transform: scale(1.1);
+}
+
+/* =============================================================
+   Music Widget
+   ============================================================= */
+.music-widget {
+  display: flex;
+  gap: 12px;
+  width: 100%;
+  height: 100%;
+  align-items: flex-start;
+}
+
+.music-empty {
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.music-empty-icon {
+  color: var(--text-tertiary);
+  opacity: 0.6;
+}
+
+.music-empty-text {
+  font-size: 12px;
+  color: var(--text-secondary);
+  font-weight: 400;
+}
+
+/* Album art container */
+.music-art-container {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.music-art {
+  width: var(--art-size);
+  height: var(--art-size);
+  border-radius: 12px;
+  object-fit: cover;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.3);
+}
+
+.music-art-placeholder {
+  background: rgba(255, 255, 255, 0.06);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-tertiary);
+}
+
+/* Glow behind album art when playing */
+.music-art-glow {
+  position: absolute;
+  inset: -8px;
+  border-radius: 20px;
+  background: var(--accent-glow);
+  filter: blur(20px);
+  z-index: -1;
+  animation: art-glow 3s ease-in-out infinite alternate;
+}
+
+@keyframes art-glow {
+  0% { opacity: 0.4; transform: scale(0.9); }
+  100% { opacity: 0.7; transform: scale(1.1); }
+}
+
+/* Track info section */
+.music-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  justify-content: center;
+  height: 100%;
+}
+
+.music-text {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.music-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  letter-spacing: -0.01em;
+}
+
+.music-artist {
+  font-size: 11px;
+  font-weight: 400;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Progress bar */
+.music-progress-container {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.music-progress-bar {
+  width: 100%;
+  height: 3px;
+  background: var(--progress-bg);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.music-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent), #818cf8);
+  border-radius: 2px;
+}
+
+.music-time {
+  display: flex;
+  justify-content: space-between;
+  font-size: 9px;
+  color: var(--text-tertiary);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Playback controls */
+.music-controls {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.music-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: transparent;
+  border: none;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.music-btn:hover {
+  background: var(--btn-hover);
+  transform: scale(1.1);
+}
+
+.music-btn:active {
+  background: var(--btn-active);
+  transform: scale(0.95);
+}
+
+.music-btn-play {
+  width: 34px;
+  height: 34px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.music-btn-play:hover {
+  background: rgba(255, 255, 255, 0.14);
+}
+
+.music-wave-indicator {
+  margin-left: auto;
+}
+
+/* =============================================================
+   Calendar Widget
+   ============================================================= */
+.calendar-widget {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.calendar-empty {
+  align-items: center;
+  justify-content: center;
+}
+
+.calendar-empty-icon {
+  color: var(--text-tertiary);
+  opacity: 0.6;
+}
+
+.calendar-empty-text {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.calendar-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.calendar-header svg {
+  color: var(--accent);
+}
+
+.calendar-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
+  overflow: hidden;
+}
+
+.calendar-event {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 8px;
+  transition: background 0.15s ease;
+}
+
+.calendar-event:hover {
+  background: rgba(255, 255, 255, 0.07);
+}
+
+.calendar-event-accent {
+  width: 3px;
+  height: 24px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+.calendar-event-info {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.calendar-event-title {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.calendar-event-time {
+  font-size: 10px;
+  color: var(--text-secondary);
+}
+
+/* =============================================================
+   Sound Wave Animation — equalizer bars
+   ============================================================= */
+.sound-wave {
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 14px;
+  flex-shrink: 0;
+}
+
+.sound-bar {
+  width: 2.5px;
+  background: var(--accent);
+  border-radius: 1px;
+  animation: sound-bounce 0.8s ease-in-out infinite alternate;
+}
+
+.sound-bar:nth-child(1) { height: 40%; }
+.sound-bar:nth-child(2) { height: 70%; }
+.sound-bar:nth-child(3) { height: 50%; }
+.sound-bar:nth-child(4) { height: 90%; }
+
+@keyframes sound-bounce {
+  0% { transform: scaleY(0.3); }
+  100% { transform: scaleY(1); }
+}
+
+/* =============================================================
+   Scrollbar — hidden for clean look
+   ============================================================= */
+::-webkit-scrollbar {
+  display: none;
+}
