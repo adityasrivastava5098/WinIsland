@@ -2,7 +2,11 @@
 
 A premium, interactive Dynamic Island experience for Windows. Inspired by the iPhone, built for your desktop.
 
-![WinIsland Preview](./assets/preview.png)
+<p align="center">
+  <img src="./assets/preview.png" width="32%" />
+  <img src="./assets/preview2.png" width="32%" />
+  <img src="./assets/calendar.png" width="32%" />
+</p>
 
 ## ✨ Features
 
@@ -49,10 +53,15 @@ npx electron .
 
 ## 🏗️ Tech Stack
 
+<details>
+<summary>Click to view technologies used</summary>
+
 - **Electron**: Desktop shell and OS integration.
 - **React + Vite**: Frontend UI.
 - **Framer Motion**: Smooth, spring-based animations.
 - **PowerShell (v5.1+)**: Interfacing with the Windows System Media Transport Controls (SMTC) API.
+
+</details>
 
 ---
 *Inspired by the future of multitasking. Built for productivity.*
