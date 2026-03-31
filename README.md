@@ -1,110 +1,58 @@
-# Dynamic Island for Windows
+# 🏝️ WinIsland
 
-A sleek, always-on-top overlay that brings Apple's Dynamic Island concept to Windows, optimized for multi-monitor setups.
+A premium, interactive Dynamic Island experience for Windows. Inspired by the iPhone, built for your desktop.
 
-## Features
+![WinIsland Preview](./assets/preview.png)
 
-- **Multi-Monitor Support** — Automatically detects all displays and renders one island per monitor
-- **Music Integration** — Detects media from Spotify, browsers, VLC, and any SMTC-compatible app
-- **Calendar Integration** — Shows upcoming Outlook calendar events with countdown
-- **Smooth Animations** — Spring-based transitions powered by Framer Motion
-- **Acrylic Blur** — Windows Fluent Design-inspired glassmorphism
-- **System Tray** — Toggle visibility, auto-start on boot, and more
-- **Always-on-Top** — Stays above all windows including most fullscreen apps
+## ✨ Features
 
-## Tech Stack
+- **Multi-Monitor Support**: Detects and pins an island to the top of every connected display.
+- **Always-On-Top**: Stays above all apps (even in fullscreen where possible).
+- **Media Intelligence**:
+  - Automatically detects media from **Spotify**, **Apple Music**, **Edge**, **Chrome**, etc.
+  - **Premium Artwork Extraction**: Uses .NET Reflection to bypass WinRT limitations, ensuring artwork is visible even when the source app is finicky.
+  - **Dynamic Color Sync**: The island glow and waveform match the dominant color of the current album art.
+  - **Interactive Seekbar**: Drag and scrub through your music in real-time.
+  - **One-Click Launch**: Click the album art to immediately open the source music app.
+- **Calendar Integration**: A clean, monthly grid view with today's date highlighting and event indicators.
 
-| Layer | Technology |
-|-------|-----------|
-| Runtime | Electron |
-| UI | React + Framer Motion |
-| Bundler | Vite |
-| Media API | Windows SMTC (via PowerShell WinRT) |
-| Calendar | Outlook COM Automation |
-| Packaging | electron-builder |
+## 🚀 Quick Start
 
-## Getting Started
+The fastest way to get started is to use the provided runner:
 
-### Prerequisites
+1.  Clone the repository or download the source.
+2.  Double-click **`winsland.bat`**.
+3.  Enjoy your island! 🏝️
 
-- **Node.js** ≥ 18
-- **Windows 10/11** (required for SMTC and WinRT APIs)
-- **npm** ≥ 9
+## 🛠️ Manual Installation
 
-### Install
+If you prefer to install manually:
 
 ```bash
-git clone <repo-url>
-cd dynamic_island
+# Install dependencies
 npm install
+
+# Start the dev server
+npx vite
+
+# In another terminal, start Electron
+set NODE_ENV=development
+npx electron .
 ```
 
-### Run in Development
+## ⌨️ Controls
 
-```bash
-npm run dev
-```
+- **Click Capsule**: Expand the island to view media controls or calendar.
+- **Hover**: Enables interaction; mouse events are ignored on transparent areas when the island is collapsed.
+- **Click Outside**: Automatically collapses the expanded island back into its minimal pill state.
+- **Top-Right Button**: Toggle between Music Player and Calendar views.
 
-This starts Vite dev server + Electron concurrently with hot reload.
+## 🏗️ Tech Stack
 
-### Build for Production
+- **Electron**: Desktop shell and OS integration.
+- **React + Vite**: Frontend UI.
+- **Framer Motion**: Smooth, spring-based animations.
+- **PowerShell (v5.1+)**: Interfacing with the Windows System Media Transport Controls (SMTC) API.
 
-```bash
-npm run build
-```
-
-Generates an installer in `dist-electron/`.
-
-## Project Structure
-
-```
-dynamic_island/
-├── electron/               # Electron main process
-│   ├── main.js             # App entry, IPC hub, lifecycle
-│   ├── preload.js          # Context bridge (renderer ↔ main)
-│   ├── monitorManager.js   # Display detection, window creation
-│   ├── mediaManager.js     # SMTC media polling & control
-│   ├── calendarManager.js  # Outlook calendar fetching
-│   └── trayManager.js      # System tray icon & menu
-├── src/                    # React renderer process
-│   ├── main.jsx            # React entry point
-│   ├── App.jsx             # State management, IPC hooks
-│   ├── components/
-│   │   ├── DynamicIsland.jsx  # Main island UI + animations
-│   │   ├── MusicWidget.jsx    # Expanded music view
-│   │   ├── CalendarWidget.jsx # Expanded calendar view
-│   │   └── SoundWave.jsx      # Equalizer animation
-│   └── styles/
-│       └── index.css       # All styles (dark theme)
-├── assets/
-│   └── tray-icon.png       # System tray icon
-├── index.html              # HTML shell
-├── vite.config.js          # Vite configuration
-└── package.json            # Dependencies & scripts
-```
-
-## How It Works
-
-1. **Monitor Manager** detects all displays via Electron's `screen` API and creates one transparent, frameless `BrowserWindow` per monitor, centered at the top edge.
-
-2. **Media Manager** polls Windows SMTC every second using PowerShell + WinRT APIs to get the current track title, artist, album art (as base64), playback status, and timeline.
-
-3. **Calendar Manager** queries Outlook via COM automation every 60 seconds for upcoming events within the next 24 hours.
-
-4. **Dynamic Island UI** animates between three states:
-   - **Collapsed** — minimal pill showing track name + sound wave
-   - **Peek** — slightly wider on hover
-   - **Expanded** — full widget with controls (click to toggle)
-
-## Controls
-
-| Action | Effect |
-|--------|--------|
-| Hover | Expand to peek state |
-| Click | Toggle expanded view |
-| Right-click tray | Settings menu |
-| Double-click tray | Toggle visibility |
-
-## License
-
-MIT
+---
+*Inspired by the future of multitasking. Built for productivity.*

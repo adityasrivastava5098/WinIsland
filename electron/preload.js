@@ -15,6 +15,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // ---- Open source app ----
   openSourceApp: (sourceId) => ipcRenderer.invoke('open-source-app', sourceId),
 
+  // ---- Window handling ----
+  setIgnoreMouseEvents: (ignore, options) => ipcRenderer.send('set-ignore-mouse-events', ignore, options),
+
   // ---- Calendar ----
   getCalendarEvents: () => ipcRenderer.invoke('get-calendar-events'),
 

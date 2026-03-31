@@ -4,7 +4,7 @@
 // monitors, media, calendar, and tray modules.
 // ============================================================
 
-const { app, ipcMain, screen, shell } = require('electron');
+const { app, ipcMain, screen, shell, BrowserWindow } = require('electron');
 const { execFile } = require('child_process');
 const path = require('path');
 const MonitorManager = require('./monitorManager');
@@ -63,6 +63,12 @@ ipcMain.handle('get-media-state', () => mediaManager?.getCurrentState() || null)
 // Seek to position (seconds)
 ipcMain.handle('media-seek', (_event, positionSeconds) => {
   return mediaManager?.seekTo(positionSeconds);
+});
+
+// Toggle click-through for transparent regions
+ipcMain.on('set-ignore-mouse-events', (event, ignore, options) => {
+  const win = BrowserWindow.fromWebContents(event.sender);
+  win?.setIgnoreMouseEvents(ignore, options);
 });
 
 // Calendar events

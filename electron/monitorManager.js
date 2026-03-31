@@ -126,6 +126,11 @@ class MonitorManager {
       win.loadFile(path.join(__dirname, '..', 'dist', 'index.html'));
     }
 
+    // Default to click-through for transparent regions
+    win.webContents.on('did-finish-load', () => {
+      win.setIgnoreMouseEvents(true, { forward: true });
+    });
+
     // Store reference keyed by display ID
     this.windows.set(display.id, win);
 

@@ -114,8 +114,8 @@ html, body, #root {
 }
 
 .island-idle-dot {
-  width: 5px;
-  height: 5px;
+  width: 8px;
+  height: 8px;
   border-radius: 50%;
   background: var(--text-tertiary);
   animation: pulse-idle 2.5s ease-in-out infinite;
@@ -373,7 +373,7 @@ html, body, #root {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 2px;
+  padding: 0 40px 0 2px; /* Add right padding to move navigation away from mode toggle */
 }
 
 .cal-month-label {

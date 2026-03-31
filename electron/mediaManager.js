@@ -49,6 +49,7 @@ if ($sessions.Count -eq 0) {
 }
 
 # Score sessions: Playing=3, Paused=2, else=1
+# Break ties with the OS-provided list order (first in list = most recently active)
 $best = $null
 $bestScore = 0
 foreach ($s in $sessions) {
@@ -57,7 +58,10 @@ foreach ($s in $sessions) {
   $st = [string]$pb.PlaybackStatus
   if ($st -eq 'Playing') { $score = 3 }
   elseif ($st -eq 'Paused') { $score = 2 }
-  if ($score -gt $bestScore) { $bestScore = $score; $best = $s }
+  
+  if ($score -gt $bestScore) {
+    $bestScore = $score; $best = $s
+  }
 }
 
 if ($null -eq $best) {
@@ -70,44 +74,26 @@ $playback = $best.GetPlaybackInfo()
 $timeline = $best.GetTimelineProperties()
 
 # Extract album artwork as base64
-# Some apps (Apple Music) report stream.Size=0, so we use chunked read
 $b64 = ""
 if ($null -ne $info.Thumbnail) {
   try {
+    $asStreamForReadMethod = ([System.IO.WindowsRuntimeStreamExtensions].GetMethods() | Where-Object { $_.Name -eq 'AsStreamForRead' -and $_.GetParameters().Count -eq 1 })[0]
     $stream = Await ($info.Thumbnail.OpenReadAsync()) ([Windows.Storage.Streams.IRandomAccessStreamWithContentType])
-    $size = $stream.Size
-
-    if ($size -gt 0 -and $size -lt 10000000) {
-      # Size is known — read directly
-      $reader = New-Object Windows.Storage.Streams.DataReader($stream.GetInputStreamAt(0))
-      Await ($reader.LoadAsync([uint32]$size)) ([uint32])
-      $bytes = New-Object byte[] $size
-      $reader.ReadBytes($bytes)
-      $b64 = [Convert]::ToBase64String($bytes)
-      $reader.Dispose()
-    } else {
-      # Size unknown — chunked read via DataReader
-      $inputStream = $stream.GetInputStreamAt(0)
-      $reader = New-Object Windows.Storage.Streams.DataReader($inputStream)
-      $reader.InputStreamOptions = [Windows.Storage.Streams.InputStreamOptions]::Partial
-      $allBytes = New-Object System.Collections.Generic.List[byte]
-      $chunkSize = [uint32]8192
-      
-      do {
-        $loaded = Await ($reader.LoadAsync($chunkSize)) ([uint32])
-        if ($loaded -gt 0) {
-          $chunk = New-Object byte[] $loaded
-          $reader.ReadBytes($chunk)
-          $allBytes.AddRange($chunk)
-        }
-      } while ($loaded -eq $chunkSize -and $allBytes.Count -lt 10000000)
-      
-      if ($allBytes.Count -gt 0) {
-        $b64 = [Convert]::ToBase64String($allBytes.ToArray())
+    
+    if ($null -ne $stream -and $null -ne $asStreamForReadMethod) {
+      $netStream = $asStreamForReadMethod.Invoke($null, @($stream))
+      $ms = New-Object System.IO.MemoryStream
+      $buffer = New-Object byte[] 8192
+      while (($read = $netStream.Read($buffer, 0, $buffer.Length)) -gt 0) {
+        $ms.Write($buffer, 0, $read)
       }
-      $reader.Dispose()
+      $bytes = $ms.ToArray()
+      if ($bytes.Length -gt 0) {
+        $b64 = [Convert]::ToBase64String($bytes)
+      }
+      $ms.Dispose()
+      $netStream.Dispose()
     }
-    $stream.Dispose()
   } catch {}
 }
 
@@ -146,8 +132,7 @@ $sessions = $mgr.GetSessions()
 $best = $null; $bestScore = 0
 foreach ($s in $sessions) {
   $pb = $s.GetPlaybackInfo()
-  $score = 1
-  $st = [string]$pb.PlaybackStatus
+  $score = 1; $st = [string]$pb.PlaybackStatus
   if ($st -eq 'Playing') { $score = 3 } elseif ($st -eq 'Paused') { $score = 2 }
   if ($score -gt $bestScore) { $bestScore = $score; $best = $s }
 }
@@ -177,8 +162,7 @@ $sessions = $mgr.GetSessions()
 $best = $null; $bestScore = 0
 foreach ($s in $sessions) {
   $pb = $s.GetPlaybackInfo()
-  $score = 1
-  $st = [string]$pb.PlaybackStatus
+  $score = 1; $st = [string]$pb.PlaybackStatus
   if ($st -eq 'Playing') { $score = 3 } elseif ($st -eq 'Paused') { $score = 2 }
   if ($score -gt $bestScore) { $bestScore = $score; $best = $s }
 }

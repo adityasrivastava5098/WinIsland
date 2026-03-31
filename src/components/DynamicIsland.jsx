@@ -26,10 +26,45 @@ function DynamicIsland({
   onToggleMode,
 }) {
   const [isExpanded, setIsExpanded] = useState(false);
+  const [shouldShowMedia, setShouldShowMedia] = useState(false);
   const islandRef = useRef(null);
+  const lingerTimerRef = useRef(null);
 
   const isPlaying = mediaState?.playbackStatus === 'Playing';
   const hasMedia = mediaState && mediaState.status !== 'no_session';
+
+  // ----------------------------------------------------------
+  // Linger logic: keep music pill for 2 mins after pausing
+  // ----------------------------------------------------------
+  useEffect(() => {
+    if (isPlaying) {
+      setShouldShowMedia(true);
+      if (lingerTimerRef.current) {
+        clearTimeout(lingerTimerRef.current);
+        lingerTimerRef.current = null;
+      }
+    } else if (hasMedia) {
+      // Was already showing media? Wait 2 minutes if paused.
+      if (shouldShowMedia) {
+        if (!lingerTimerRef.current) {
+          lingerTimerRef.current = setTimeout(() => {
+            setShouldShowMedia(false);
+            lingerTimerRef.current = null;
+          }, 120000); // 2 minutes
+        }
+      } else {
+        // Not showing media yet, but current session is paused? Stay idle.
+        setShouldShowMedia(false);
+      }
+    } else {
+      // No session at all: collapse to dot immediately
+      setShouldShowMedia(false);
+      if (lingerTimerRef.current) {
+        clearTimeout(lingerTimerRef.current);
+        lingerTimerRef.current = null;
+      }
+    }
+  }, [isPlaying, hasMedia, shouldShowMedia]);
 
   // ----------------------------------------------------------
   // Click-outside: detect clicks on the transparent body
@@ -68,8 +103,18 @@ function DynamicIsland({
     if (isExpanded) {
       return { width: 360, height: 200, borderRadius: 32 };
     }
-    return { width: hasMedia ? 200 : 120, height: 40, borderRadius: 20 };
-  }, [isExpanded, hasMedia]);
+    // Collapsed: show music pill (160) or idle circle (40)
+    return { width: shouldShowMedia ? 160 : 40, height: 40, borderRadius: 20 };
+  }, [isExpanded, shouldShowMedia]);
+
+  // Handle click-through state
+  useEffect(() => {
+    if (isExpanded) {
+      window.electronAPI?.setIgnoreMouseEvents(false);
+    } else {
+      window.electronAPI?.setIgnoreMouseEvents(true, { forward: true });
+    }
+  }, [isExpanded]);
 
   // Collapse handler
   const collapse = useCallback(() => setIsExpanded(false), []);
@@ -78,7 +123,7 @@ function DynamicIsland({
   // Collapsed content
   // ----------------------------------------------------------
   const renderCollapsed = () => {
-    if (hasMedia) {
+    if (shouldShowMedia) {
       return (
         <motion.div
           className="island-collapsed-content"
@@ -115,9 +160,10 @@ function DynamicIsland({
     return (
       <motion.div
         className="island-collapsed-content island-idle"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
+        initial={{ opacity: 0, scale: 0.8 }}
+        animate={{ opacity: 1, scale: 1 }}
+        exit={{ opacity: 0, scale: 0.8 }}
+        style={{ width: '40px', justifyContent: 'center' }}
       >
         <div className="island-idle-dot" />
       </motion.div>
@@ -137,7 +183,15 @@ function DynamicIsland({
         }}
         transition={SPRING}
         onClick={() => {
-          if (!isExpanded) setIsExpanded(true);
+          if (!isExpanded) {
+            // Reset to music mode if opening
+            if (mode !== 'music') onToggleMode();
+            setIsExpanded(true);
+          }
+        }}
+        onMouseEnter={() => window.electronAPI?.setIgnoreMouseEvents(false)}
+        onMouseLeave={() => {
+          if (!isExpanded) window.electronAPI?.setIgnoreMouseEvents(true, { forward: true });
         }}
         style={{ cursor: isExpanded ? 'default' : 'pointer' }}
       >
