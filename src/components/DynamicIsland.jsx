@@ -132,9 +132,10 @@ function DynamicIsland({
               src={`data:image/jpeg;base64,${mediaState.artwork}`}
               alt=""
               className="island-thumb-circle"
+              style={{ pointerEvents: 'none' }}
             />
           ) : (
-            <div className="island-thumb-circle island-thumb-placeholder">
+            <div className="island-thumb-circle island-thumb-placeholder" style={{ pointerEvents: 'none' }}>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M9 18V5l12-2v13" />
                 <circle cx="6" cy="18" r="3" />
@@ -153,6 +154,7 @@ function DynamicIsland({
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: -8 }}
                 transition={{ duration: 0.2 }}
+                style={{ pointerEvents: 'none' }}
               >
                 <span className="pill-title">{mediaState?.title || 'Unknown'}</span>
                 <span className="pill-artist">{mediaState?.artist || 'Unknown'}</span>
@@ -165,7 +167,7 @@ function DynamicIsland({
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.2 }}
-                style={{ display: 'flex', alignItems: 'center', width: '100%', height: '100%' }}
+                style={{ display: 'flex', alignItems: 'center', width: '100%', height: '100%', pointerEvents: 'none' }}
               >
                 <div className="island-collapsed-spacer" />
                 {isPlaying ? (
