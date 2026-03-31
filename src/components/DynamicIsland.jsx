@@ -27,6 +27,7 @@ function DynamicIsland({
   onExpandRefresh,
 }) {
   const [isExpanded, setIsExpanded] = useState(false);
+  const [expandSignal, setExpandSignal] = useState(0);
   const [shouldShowMedia, setShouldShowMedia] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
   const islandRef = useRef(null);
@@ -215,6 +216,7 @@ function DynamicIsland({
             // Reset to music mode if opening
             if (mode !== 'music') onToggleMode();
             onExpandRefresh?.();
+            setExpandSignal((n) => n + 1);
             setIsExpanded(true);
           }
         }}
@@ -250,6 +252,7 @@ function DynamicIsland({
                 <MusicWidget
                   mediaState={mediaState}
                   isPlaying={isPlaying}
+                  expandSignal={expandSignal}
                   accentColor={accentColor}
                   onPlayPause={onPlayPause}
                   onNext={onNext}

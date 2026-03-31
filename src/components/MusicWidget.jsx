@@ -14,6 +14,7 @@ import { motion } from 'framer-motion';
 function MusicWidget({
   mediaState,
   isPlaying,
+  expandSignal = 0,
   accentColor = '#ffffff',
   onPlayPause,
   onNext,
@@ -83,6 +84,12 @@ function MusicWidget({
     }
     lastIsPlayingRef.current = isPlaying;
   }, [isPlaying, isSeeking, mediaPosition, duration]);
+
+  // Force refresh timestamp on every widget expand.
+  useEffect(() => {
+    if (isSeeking) return;
+    setDisplayPosition(clampPosition(mediaPosition, duration));
+  }, [expandSignal, isSeeking, mediaPosition, duration]);
 
   // Advance exactly once per second while playing.
   useEffect(() => {
