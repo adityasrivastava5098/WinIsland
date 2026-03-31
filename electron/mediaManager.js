@@ -26,6 +26,8 @@ function ensureScriptDir() {
 // PowerShell script: query all SMTC sessions, pick the best one
 // =================================================================
 const QUERY_SCRIPT_CONTENT = `
+$OutputEncoding = [System.Text.UTF8Encoding]::new($false)
+[Console]::OutputEncoding = [System.Text.UTF8Encoding]::new($false)
 Add-Type -AssemblyName System.Runtime.WindowsRuntime
 
 $asTaskGeneric = ([System.WindowsRuntimeSystemExtensions].GetMethods() |
@@ -103,9 +105,9 @@ if ($null -ne $info.Thumbnail) {
 
 $obj = @{
   status         = "active"
-  title          = [string]$info.Title
-  artist         = [string]$info.Artist
-  album          = [string]$info.AlbumTitle
+  title          = [Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes([string]$info.Title))
+  artist         = [Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes([string]$info.Artist))
+  album          = [Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes([string]$info.AlbumTitle))
   artwork        = $b64
   playbackStatus = [string]$playback.PlaybackStatus
   position       = [math]::Round($timeline.Position.TotalSeconds, 2)
@@ -313,22 +315,30 @@ class MediaManager {
   // Internal: query current media session via PowerShell
   // ----------------------------------------------------------
   _queryMedia() {
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve) => {
       execFile(
         'powershell.exe',
         ['-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-File', this._scriptPaths.query],
-        { timeout: 8000 },
+        { timeout: 3000 },
         (err, stdout) => {
-          if (err) return reject(err);
+          if (err || !stdout) return resolve({ status: 'no_session', title: '', artist: '' });
           try {
             const raw = stdout.trim();
             const jsonStart = raw.indexOf('{');
             const jsonEnd = raw.lastIndexOf('}');
-            if (jsonStart === -1) return reject(new Error('No JSON'));
+            if (jsonStart === -1) return resolve({ status: 'no_session', title: '', artist: '' });
             const data = JSON.parse(raw.substring(jsonStart, jsonEnd + 1));
+            
+            // Decode Base64 strings to UTF-8
+            if (data.status === 'active') {
+              if (data.title) data.title = Buffer.from(data.title, 'base64').toString('utf8');
+              if (data.artist) data.artist = Buffer.from(data.artist, 'base64').toString('utf8');
+              if (data.album) data.album = Buffer.from(data.album, 'base64').toString('utf8');
+            }
+
             resolve(data);
           } catch (e) {
-            reject(e);
+            resolve({ status: 'no_session', title: '', artist: '' });
           }
         }
       );
