@@ -1,0 +1,297 @@
+import { createHotContext as __vite__createHotContext } from "/@vite/client";import.meta.hot = __vite__createHotContext("/src/components/CalendarWidget.jsx");// ============================================================
+// Calendar Widget — Monthly Grid View (Redesigned)
+// Shows a mini monthly calendar grid with:
+//   - Current month/year header with nav arrows
+//   - Day-of-week headers
+//   - Date grid with current day highlighted
+//   - Event indicators on event days
+// Only shown when user explicitly switches to calendar mode.
+// ============================================================
+import __vite__cjsImport0_react from "/node_modules/.vite/deps/react.js?v=9d2162cf"; const React = !__vite__cjsImport0_react.__esModule ? __vite__cjsImport0_react : __vite__cjsImport0_react.default; const useState = __vite__cjsImport0_react["useState"]; const useMemo = __vite__cjsImport0_react["useMemo"];
+import { motion } from "/node_modules/.vite/deps/framer-motion.js?v=9d2162cf";
+var _jsxFileName = "C:/Users/adity/Desktop/junk projects/test playground/dynamic_island/src/components/CalendarWidget.jsx";
+import __vite__cjsImport2_react_jsxDevRuntime from "/node_modules/.vite/deps/react_jsx-dev-runtime.js?v=9d2162cf"; const _jsxDEV = __vite__cjsImport2_react_jsxDevRuntime["jsxDEV"]; const _Fragment = __vite__cjsImport2_react_jsxDevRuntime["Fragment"];
+var _s = $RefreshSig$();
+const DAYS = [
+	"Su",
+	"Mo",
+	"Tu",
+	"We",
+	"Th",
+	"Fr",
+	"Sa"
+];
+const MONTHS = [
+	"January",
+	"February",
+	"March",
+	"April",
+	"May",
+	"June",
+	"July",
+	"August",
+	"September",
+	"October",
+	"November",
+	"December"
+];
+function CalendarWidget({ events = [] }) {
+	_s();
+	const today = new Date();
+	const [viewMonth, setViewMonth] = useState(today.getMonth());
+	const [viewYear, setViewYear] = useState(today.getFullYear());
+	const [selectedDay, setSelectedDay] = useState(today.getDate());
+	// Build the calendar grid for the current month
+	const grid = useMemo(() => {
+		const firstDay = new Date(viewYear, viewMonth, 1).getDay();
+		const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
+		const cells = [];
+		// Empty cells before the 1st
+		for (let i = 0; i < firstDay; i++) {
+			cells.push(null);
+		}
+		// Day cells
+		for (let d = 1; d <= daysInMonth; d++) {
+			cells.push(d);
+		}
+		return cells;
+	}, [viewMonth, viewYear]);
+	// Determine which days have events
+	const eventDays = useMemo(() => {
+		const days = new Set();
+		for (const ev of events) {
+			try {
+				const d = new Date(ev.start);
+				if (d.getMonth() === viewMonth && d.getFullYear() === viewYear) {
+					days.add(d.getDate());
+				}
+			} catch {}
+		}
+		return days;
+	}, [
+		events,
+		viewMonth,
+		viewYear
+	]);
+	// Events for the selected day
+	const selectedEvents = useMemo(() => {
+		return events.filter((ev) => {
+			try {
+				const d = new Date(ev.start);
+				return d.getDate() === selectedDay && d.getMonth() === viewMonth && d.getFullYear() === viewYear;
+			} catch {
+				return false;
+			}
+		});
+	}, [
+		events,
+		selectedDay,
+		viewMonth,
+		viewYear
+	]);
+	const isToday = (day) => {
+		return day === today.getDate() && viewMonth === today.getMonth() && viewYear === today.getFullYear();
+	};
+	const prevMonth = (e) => {
+		e.stopPropagation();
+		if (viewMonth === 0) {
+			setViewMonth(11);
+			setViewYear((y) => y - 1);
+		} else {
+			setViewMonth((m) => m - 1);
+		}
+	};
+	const nextMonth = (e) => {
+		e.stopPropagation();
+		if (viewMonth === 11) {
+			setViewMonth(0);
+			setViewYear((y) => y + 1);
+		} else {
+			setViewMonth((m) => m + 1);
+		}
+	};
+	return /* @__PURE__ */ _jsxDEV("div", {
+		className: "calendar-widget",
+		onClick: (e) => e.stopPropagation(),
+		children: [
+			/* @__PURE__ */ _jsxDEV("div", {
+				className: "cal-header",
+				children: [
+					/* @__PURE__ */ _jsxDEV("button", {
+						className: "cal-nav-btn",
+						onClick: prevMonth,
+						children: /* @__PURE__ */ _jsxDEV("svg", {
+							width: "12",
+							height: "12",
+							viewBox: "0 0 24 24",
+							fill: "none",
+							stroke: "currentColor",
+							strokeWidth: "2.5",
+							children: /* @__PURE__ */ _jsxDEV("polyline", { points: "15 18 9 12 15 6" }, void 0, false, {
+								fileName: _jsxFileName,
+								lineNumber: 101,
+								columnNumber: 13
+							}, this)
+						}, void 0, false, {
+							fileName: _jsxFileName,
+							lineNumber: 100,
+							columnNumber: 11
+						}, this)
+					}, void 0, false, {
+						fileName: _jsxFileName,
+						lineNumber: 99,
+						columnNumber: 9
+					}, this),
+					/* @__PURE__ */ _jsxDEV("span", {
+						className: "cal-month-label",
+						children: [
+							MONTHS[viewMonth],
+							" ",
+							viewYear
+						]
+					}, void 0, true, {
+						fileName: _jsxFileName,
+						lineNumber: 104,
+						columnNumber: 9
+					}, this),
+					/* @__PURE__ */ _jsxDEV("button", {
+						className: "cal-nav-btn",
+						onClick: nextMonth,
+						children: /* @__PURE__ */ _jsxDEV("svg", {
+							width: "12",
+							height: "12",
+							viewBox: "0 0 24 24",
+							fill: "none",
+							stroke: "currentColor",
+							strokeWidth: "2.5",
+							children: /* @__PURE__ */ _jsxDEV("polyline", { points: "9 18 15 12 9 6" }, void 0, false, {
+								fileName: _jsxFileName,
+								lineNumber: 109,
+								columnNumber: 13
+							}, this)
+						}, void 0, false, {
+							fileName: _jsxFileName,
+							lineNumber: 108,
+							columnNumber: 11
+						}, this)
+					}, void 0, false, {
+						fileName: _jsxFileName,
+						lineNumber: 107,
+						columnNumber: 9
+					}, this)
+				]
+			}, void 0, true, {
+				fileName: _jsxFileName,
+				lineNumber: 98,
+				columnNumber: 7
+			}, this),
+			/* @__PURE__ */ _jsxDEV("div", {
+				className: "cal-day-headers",
+				children: DAYS.map((d) => /* @__PURE__ */ _jsxDEV("span", {
+					className: "cal-day-header",
+					children: d
+				}, d, false, {
+					fileName: _jsxFileName,
+					lineNumber: 117,
+					columnNumber: 11
+				}, this))
+			}, void 0, false, {
+				fileName: _jsxFileName,
+				lineNumber: 115,
+				columnNumber: 7
+			}, this),
+			/* @__PURE__ */ _jsxDEV("div", {
+				className: "cal-grid",
+				children: grid.map((day, i) => /* @__PURE__ */ _jsxDEV(motion.div, {
+					className: [
+						"cal-cell",
+						day === null ? "cal-cell-empty" : "",
+						day === selectedDay ? "cal-cell-selected" : "",
+						day && isToday(day) ? "cal-cell-today" : ""
+					].filter(Boolean).join(" "),
+					onClick: (e) => {
+						e.stopPropagation();
+						if (day) setSelectedDay(day);
+					},
+					whileTap: { scale: .9 },
+					children: day && /* @__PURE__ */ _jsxDEV(_Fragment, { children: [/* @__PURE__ */ _jsxDEV("span", { children: day }, void 0, false, {
+						fileName: _jsxFileName,
+						lineNumber: 140,
+						columnNumber: 17
+					}, this), eventDays.has(day) && /* @__PURE__ */ _jsxDEV("div", { className: "cal-event-dot" }, void 0, false, {
+						fileName: _jsxFileName,
+						lineNumber: 141,
+						columnNumber: 40
+					}, this)] }, void 0, true)
+				}, i, false, {
+					fileName: _jsxFileName,
+					lineNumber: 124,
+					columnNumber: 11
+				}, this))
+			}, void 0, false, {
+				fileName: _jsxFileName,
+				lineNumber: 122,
+				columnNumber: 7
+			}, this),
+			selectedEvents.length > 0 && /* @__PURE__ */ _jsxDEV("div", {
+				className: "cal-events",
+				children: selectedEvents.slice(0, 2).map((ev, i) => /* @__PURE__ */ _jsxDEV("div", {
+					className: "cal-event-item",
+					children: [/* @__PURE__ */ _jsxDEV("div", { className: "cal-event-accent" }, void 0, false, {
+						fileName: _jsxFileName,
+						lineNumber: 153,
+						columnNumber: 15
+					}, this), /* @__PURE__ */ _jsxDEV("span", {
+						className: "cal-event-text",
+						children: ev.title
+					}, void 0, false, {
+						fileName: _jsxFileName,
+						lineNumber: 154,
+						columnNumber: 15
+					}, this)]
+				}, i, true, {
+					fileName: _jsxFileName,
+					lineNumber: 152,
+					columnNumber: 13
+				}, this))
+			}, void 0, false, {
+				fileName: _jsxFileName,
+				lineNumber: 150,
+				columnNumber: 9
+			}, this)
+		]
+	}, void 0, true, {
+		fileName: _jsxFileName,
+		lineNumber: 96,
+		columnNumber: 5
+	}, this);
+}
+_s(CalendarWidget, "xXScIEIpksYD8LJWK9hQ/0OkuVU=");
+_c = CalendarWidget;
+export default CalendarWidget;
+var _c;
+$RefreshReg$(_c, "CalendarWidget");
+import * as RefreshRuntime from "/@react-refresh";
+const inWebWorker = typeof WorkerGlobalScope !== 'undefined' && self instanceof WorkerGlobalScope;
+import * as __vite_react_currentExports from "/src/components/CalendarWidget.jsx";
+if (import.meta.hot && !inWebWorker) {
+  if (!window.$RefreshReg$) {
+    throw new Error(
+      "@vitejs/plugin-react can't detect preamble. Something is wrong."
+    );
+  }
+
+  const currentExports = __vite_react_currentExports;
+  queueMicrotask(() => {
+    RefreshRuntime.registerExportsForReactRefresh("C:/Users/adity/Desktop/junk projects/test playground/dynamic_island/src/components/CalendarWidget.jsx", currentExports);
+    import.meta.hot.accept((nextExports) => {
+      if (!nextExports) return;
+      const invalidateMessage = RefreshRuntime.validateRefreshBoundaryAndEnqueueUpdate("C:/Users/adity/Desktop/junk projects/test playground/dynamic_island/src/components/CalendarWidget.jsx", currentExports, nextExports);
+      if (invalidateMessage) import.meta.hot.invalidate(invalidateMessage);
+    });
+  });
+}
+function $RefreshReg$(type, id) { return RefreshRuntime.register(type, "C:/Users/adity/Desktop/junk projects/test playground/dynamic_island/src/components/CalendarWidget.jsx" + ' ' + id); }
+function $RefreshSig$() { return RefreshRuntime.createSignatureFunctionForTransform(); }
+
+//# sourceMappingURL=data:application/json;base64,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RDtLQUFhLFdBQVU7ZUFBdkIsQ0FDRSx3QkFBQyxPQUFELEVBQUssV0FBVSxvQkFBcUI7Ozs7ZUFDcEMsd0JBQUMsUUFBRDtNQUFNLFdBQVU7Z0JBQWtCLEdBQUc7TUFBYTs7OztjQUM5QztPQUhJOzs7O1lBR0osQ0FDTjtJQUNFOzs7OztHQUVKOzs7Ozs7O2tEQUVUOztBQUVELGVBQWUiLCJuYW1lcyI6W10sInNvdXJjZXMiOlsiQ2FsZW5kYXJXaWRnZXQuanN4Il0sInZlcnNpb24iOjMsInNvdXJjZXNDb250ZW50IjpbIi8vID09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PVxuLy8gQ2FsZW5kYXIgV2lkZ2V0IOKAlCBNb250aGx5IEdyaWQgVmlldyAoUmVkZXNpZ25lZClcbi8vIFNob3dzIGEgbWluaSBtb250aGx5IGNhbGVuZGFyIGdyaWQgd2l0aDpcbi8vICAgLSBDdXJyZW50IG1vbnRoL3llYXIgaGVhZGVyIHdpdGggbmF2IGFycm93c1xuLy8gICAtIERheS1vZi13ZWVrIGhlYWRlcnNcbi8vICAgLSBEYXRlIGdyaWQgd2l0aCBjdXJyZW50IGRheSBoaWdobGlnaHRlZFxuLy8gICAtIEV2ZW50IGluZGljYXRvcnMgb24gZXZlbnQgZGF5c1xuLy8gT25seSBzaG93biB3aGVuIHVzZXIgZXhwbGljaXRseSBzd2l0Y2hlcyB0byBjYWxlbmRhciBtb2RlLlxuLy8gPT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09XG5cbmltcG9ydCBSZWFjdCwgeyB1c2VTdGF0ZSwgdXNlTWVtbyB9IGZyb20gJ3JlYWN0JztcbmltcG9ydCB7IG1vdGlvbiB9IGZyb20gJ2ZyYW1lci1tb3Rpb24nO1xuXG5jb25zdCBEQVlTID0gWydTdScsICdNbycsICdUdScsICdXZScsICdUaCcsICdGcicsICdTYSddO1xuY29uc3QgTU9OVEhTID0gW1xuICAnSmFudWFyeScsICdGZWJydWFyeScsICdNYXJjaCcsICdBcHJpbCcsICdNYXknLCAnSnVuZScsXG4gICdKdWx5JywgJ0F1Z3VzdCcsICdTZXB0ZW1iZXInLCAnT2N0b2JlcicsICdOb3ZlbWJlcicsICdEZWNlbWJlcicsXG5dO1xuXG5mdW5jdGlvbiBDYWxlbmRhcldpZGdldCh7IGV2ZW50cyA9IFtdIH0pIHtcbiAgY29uc3QgdG9kYXkgPSBuZXcgRGF0ZSgpO1xuICBjb25zdCBbdmlld01vbnRoLCBzZXRWaWV3TW9udGhdID0gdXNlU3RhdGUodG9kYXkuZ2V0TW9udGgoKSk7XG4gIGNvbnN0IFt2aWV3WWVhciwgc2V0Vmlld1llYXJdID0gdXNlU3RhdGUodG9kYXkuZ2V0RnVsbFllYXIoKSk7XG4gIGNvbnN0IFtzZWxlY3RlZERheSwgc2V0U2VsZWN0ZWREYXldID0gdXNlU3RhdGUodG9kYXkuZ2V0RGF0ZSgpKTtcblxuICAvLyBCdWlsZCB0aGUgY2FsZW5kYXIgZ3JpZCBmb3IgdGhlIGN1cnJlbnQgbW9udGhcbiAgY29uc3QgZ3JpZCA9IHVzZU1lbW8oKCkgPT4ge1xuICAgIGNvbnN0IGZpcnN0RGF5ID0gbmV3IERhdGUodmlld1llYXIsIHZpZXdNb250aCwgMSkuZ2V0RGF5KCk7XG4gICAgY29uc3QgZGF5c0luTW9udGggPSBuZXcgRGF0ZSh2aWV3WWVhciwgdmlld01vbnRoICsgMSwgMCkuZ2V0RGF0ZSgpO1xuICAgIGNvbnN0IGNlbGxzID0gW107XG5cbiAgICAvLyBFbXB0eSBjZWxscyBiZWZvcmUgdGhlIDFzdFxuICAgIGZvciAobGV0IGkgPSAwOyBpIDwgZmlyc3REYXk7IGkrKykge1xuICAgICAgY2VsbHMucHVzaChudWxsKTtcbiAgICB9XG4gICAgLy8gRGF5IGNlbGxzXG4gICAgZm9yIChsZXQgZCA9IDE7IGQgPD0gZGF5c0luTW9udGg7IGQrKykge1xuICAgICAgY2VsbHMucHVzaChkKTtcbiAgICB9XG4gICAgcmV0dXJuIGNlbGxzO1xuICB9LCBbdmlld01vbnRoLCB2aWV3WWVhcl0pO1xuXG4gIC8vIERldGVybWluZSB3aGljaCBkYXlzIGhhdmUgZXZlbnRzXG4gIGNvbnN0IGV2ZW50RGF5cyA9IHVzZU1lbW8oKCkgPT4ge1xuICAgIGNvbnN0IGRheXMgPSBuZXcgU2V0KCk7XG4gICAgZm9yIChjb25zdCBldiBvZiBldmVudHMpIHtcbiAgICAgIHRyeSB7XG4gICAgICAgIGNvbnN0IGQgPSBuZXcgRGF0ZShldi5zdGFydCk7XG4gICAgICAgIGlmIChkLmdldE1vbnRoKCkgPT09IHZpZXdNb250aCAmJiBkLmdldEZ1bGxZZWFyKCkgPT09IHZpZXdZZWFyKSB7XG4gICAgICAgICAgZGF5cy5hZGQoZC5nZXREYXRlKCkpO1xuICAgICAgICB9XG4gICAgICB9IGNhdGNoIHsgLyogc2tpcCBpbnZhbGlkICovIH1cbiAgICB9XG4gICAgcmV0dXJuIGRheXM7XG4gIH0sIFtldmVudHMsIHZpZXdNb250aCwgdmlld1llYXJdKTtcblxuICAvLyBFdmVudHMgZm9yIHRoZSBzZWxlY3RlZCBkYXlcbiAgY29uc3Qgc2VsZWN0ZWRFdmVudHMgPSB1c2VNZW1vKCgpID0+IHtcbiAgICByZXR1cm4gZXZlbnRzLmZpbHRlcigoZXYpID0+IHtcbiAgICAgIHRyeSB7XG4gICAgICAgIGNvbnN0IGQgPSBuZXcgRGF0ZShldi5zdGFydCk7XG4gICAgICAgIHJldHVybiBkLmdldERhdGUoKSA9PT0gc2VsZWN0ZWREYXkgJiZcbiAgICAgICAgICAgICAgIGQuZ2V0TW9udGgoKSA9PT0gdmlld01vbnRoICYmXG4gICAgICAgICAgICAgICBkLmdldEZ1bGxZZWFyKCkgPT09IHZpZXdZZWFyO1xuICAgICAgfSBjYXRjaCB7IHJldHVybiBmYWxzZTsgfVxuICAgIH0pO1xuICB9LCBbZXZlbnRzLCBzZWxlY3RlZERheSwgdmlld01vbnRoLCB2aWV3WWVhcl0pO1xuXG4gIGNvbnN0IGlzVG9kYXkgPSAoZGF5KSA9PiB7XG4gICAgcmV0dXJuIGRheSA9PT0gdG9kYXkuZ2V0RGF0ZSgpICYmXG4gICAgICAgICAgIHZpZXdNb250aCA9PT0gdG9kYXkuZ2V0TW9udGgoKSAmJlxuICAgICAgICAgICB2aWV3WWVhciA9PT0gdG9kYXkuZ2V0RnVsbFllYXIoKTtcbiAgfTtcblxuICBjb25zdCBwcmV2TW9udGggPSAoZSkgPT4ge1xuICAgIGUuc3RvcFByb3BhZ2F0aW9uKCk7XG4gICAgaWYgKHZpZXdNb250aCA9PT0gMCkge1xuICAgICAgc2V0Vmlld01vbnRoKDExKTtcbiAgICAgIHNldFZpZXdZZWFyKCh5KSA9PiB5IC0gMSk7XG4gICAgfSBlbHNlIHtcbiAgICAgIHNldFZpZXdNb250aCgobSkgPT4gbSAtIDEpO1xuICAgIH1cbiAgfTtcblxuICBjb25zdCBuZXh0TW9udGggPSAoZSkgPT4ge1xuICAgIGUuc3RvcFByb3BhZ2F0aW9uKCk7XG4gICAgaWYgKHZpZXdNb250aCA9PT0gMTEpIHtcbiAgICAgIHNldFZpZXdNb250aCgwKTtcbiAgICAgIHNldFZpZXdZZWFyKCh5KSA9PiB5ICsgMSk7XG4gICAgfSBlbHNlIHtcbiAgICAgIHNldFZpZXdNb250aCgobSkgPT4gbSArIDEpO1xuICAgIH1cbiAgfTtcblxuICByZXR1cm4gKFxuICAgIDxkaXYgY2xhc3NOYW1lPVwiY2FsZW5kYXItd2lkZ2V0XCIgb25DbGljaz17KGUpID0+IGUuc3RvcFByb3BhZ2F0aW9uKCl9PlxuICAgICAgey8qIE1vbnRoL3llYXIgaGVhZGVyICovfVxuICAgICAgPGRpdiBjbGFzc05hbWU9XCJjYWwtaGVhZGVyXCI+XG4gICAgICAgIDxidXR0b24gY2xhc3NOYW1lPVwiY2FsLW5hdi1idG5cIiBvbkNsaWNrPXtwcmV2TW9udGh9PlxuICAgICAgICAgIDxzdmcgd2lkdGg9XCIxMlwiIGhlaWdodD1cIjEyXCIgdmlld0JveD1cIjAgMCAyNCAyNFwiIGZpbGw9XCJub25lXCIgc3Ryb2tlPVwiY3VycmVudENvbG9yXCIgc3Ryb2tlV2lkdGg9XCIyLjVcIj5cbiAgICAgICAgICAgIDxwb2x5bGluZSBwb2ludHM9XCIxNSAxOCA5IDEyIDE1IDZcIiAvPlxuICAgICAgICAgIDwvc3ZnPlxuICAgICAgICA8L2J1dHRvbj5cbiAgICAgICAgPHNwYW4gY2xhc3NOYW1lPVwiY2FsLW1vbnRoLWxhYmVsXCI+XG4gICAgICAgICAge01PTlRIU1t2aWV3TW9udGhdfSB7dmlld1llYXJ9XG4gICAgICAgIDwvc3Bhbj5cbiAgICAgICAgPGJ1dHRvbiBjbGFzc05hbWU9XCJjYWwtbmF2LWJ0blwiIG9uQ2xpY2s9e25leHRNb250aH0+XG4gICAgICAgICAgPHN2ZyB3aWR0aD1cIjEyXCIgaGVpZ2h0PVwiMTJcIiB2aWV3Qm94PVwiMCAwIDI0IDI0XCIgZmlsbD1cIm5vbmVcIiBzdHJva2U9XCJjdXJyZW50Q29sb3JcIiBzdHJva2VXaWR0aD1cIjIuNVwiPlxuICAgICAgICAgICAgPHBvbHlsaW5lIHBvaW50cz1cIjkgMTggMTUgMTIgOSA2XCIgLz5cbiAgICAgICAgICA8L3N2Zz5cbiAgICAgICAgPC9idXR0b24+XG4gICAgICA8L2Rpdj5cblxuICAgICAgey8qIERheS1vZi13ZWVrIGhlYWRlcnMgKi99XG4gICAgICA8ZGl2IGNsYXNzTmFtZT1cImNhbC1kYXktaGVhZGVyc1wiPlxuICAgICAgICB7REFZUy5tYXAoKGQpID0+IChcbiAgICAgICAgICA8c3BhbiBrZXk9e2R9IGNsYXNzTmFtZT1cImNhbC1kYXktaGVhZGVyXCI+e2R9PC9zcGFuPlxuICAgICAgICApKX1cbiAgICAgIDwvZGl2PlxuXG4gICAgICB7LyogRGF0ZSBncmlkICovfVxuICAgICAgPGRpdiBjbGFzc05hbWU9XCJjYWwtZ3JpZFwiPlxuICAgICAgICB7Z3JpZC5tYXAoKGRheSwgaSkgPT4gKFxuICAgICAgICAgIDxtb3Rpb24uZGl2XG4gICAgICAgICAgICBrZXk9e2l9XG4gICAgICAgICAgICBjbGFzc05hbWU9e1tcbiAgICAgICAgICAgICAgJ2NhbC1jZWxsJyxcbiAgICAgICAgICAgICAgZGF5ID09PSBudWxsID8gJ2NhbC1jZWxsLWVtcHR5JyA6ICcnLFxuICAgICAgICAgICAgICBkYXkgPT09IHNlbGVjdGVkRGF5ID8gJ2NhbC1jZWxsLXNlbGVjdGVkJyA6ICcnLFxuICAgICAgICAgICAgICBkYXkgJiYgaXNUb2RheShkYXkpID8gJ2NhbC1jZWxsLXRvZGF5JyA6ICcnLFxuICAgICAgICAgICAgXS5maWx0ZXIoQm9vbGVhbikuam9pbignICcpfVxuICAgICAgICAgICAgb25DbGljaz17KGUpID0+IHtcbiAgICAgICAgICAgICAgZS5zdG9wUHJvcGFnYXRpb24oKTtcbiAgICAgICAgICAgICAgaWYgKGRheSkgc2V0U2VsZWN0ZWREYXkoZGF5KTtcbiAgICAgICAgICAgIH19XG4gICAgICAgICAgICB3aGlsZVRhcD17eyBzY2FsZTogMC45IH19XG4gICAgICAgICAgPlxuICAgICAgICAgICAge2RheSAmJiAoXG4gICAgICAgICAgICAgIDw+XG4gICAgICAgICAgICAgICAgPHNwYW4+e2RheX08L3NwYW4+XG4gICAgICAgICAgICAgICAge2V2ZW50RGF5cy5oYXMoZGF5KSAmJiA8ZGl2IGNsYXNzTmFtZT1cImNhbC1ldmVudC1kb3RcIiAvPn1cbiAgICAgICAgICAgICAgPC8+XG4gICAgICAgICAgICApfVxuICAgICAgICAgIDwvbW90aW9uLmRpdj5cbiAgICAgICAgKSl9XG4gICAgICA8L2Rpdj5cblxuICAgICAgey8qIFNlbGVjdGVkIGRheSBldmVudHMgKGlmIGFueSkgKi99XG4gICAgICB7c2VsZWN0ZWRFdmVudHMubGVuZ3RoID4gMCAmJiAoXG4gICAgICAgIDxkaXYgY2xhc3NOYW1lPVwiY2FsLWV2ZW50c1wiPlxuICAgICAgICAgIHtzZWxlY3RlZEV2ZW50cy5zbGljZSgwLCAyKS5tYXAoKGV2LCBpKSA9PiAoXG4gICAgICAgICAgICA8ZGl2IGtleT17aX0gY2xhc3NOYW1lPVwiY2FsLWV2ZW50LWl0ZW1cIj5cbiAgICAgICAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJjYWwtZXZlbnQtYWNjZW50XCIgLz5cbiAgICAgICAgICAgICAgPHNwYW4gY2xhc3NOYW1lPVwiY2FsLWV2ZW50LXRleHRcIj57ZXYudGl0bGV9PC9zcGFuPlxuICAgICAgICAgICAgPC9kaXY+XG4gICAgICAgICAgKSl9XG4gICAgICAgIDwvZGl2PlxuICAgICAgKX1cbiAgICA8L2Rpdj5cbiAgKTtcbn1cblxuZXhwb3J0IGRlZmF1bHQgQ2FsZW5kYXJXaWRnZXQ7XG4iXX0=

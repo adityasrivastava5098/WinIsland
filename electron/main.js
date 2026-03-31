@@ -5,6 +5,19 @@
 // ============================================================
 
 const { app, ipcMain, screen, shell, BrowserWindow } = require('electron');
+
+// ---- ENHANCED COMPATIBILITY MODE ----
+// Specific flags to bypass D3D11 virtualization context failures
+app.commandLine.appendSwitch('disable-gpu-sandbox');
+app.commandLine.appendSwitch('no-sandbox');
+app.commandLine.appendSwitch('disable-d3d11');
+app.commandLine.appendSwitch('use-angle', 'd3d9'); // Fallback to D3D9 which is more stable in virtual/restricted environments
+app.commandLine.appendSwitch('ignore-gpu-blocklist');
+app.commandLine.appendSwitch('in-process-gpu');
+app.commandLine.appendSwitch('disable-software-rasterizer');
+app.commandLine.appendSwitch('disable-gpu-rasterization');
+// -------------------------------------
+
 const { execFile } = require('child_process');
 const path = require('path');
 const MonitorManager = require('./monitorManager');

@@ -53,6 +53,10 @@ if ($sessions.Count -eq 0) {
 $best = $null
 $bestScore = 0
 foreach ($s in $sessions) {
+  # Get properties to check if metadata is valid
+  $info = Await ($s.TryGetMediaPropertiesAsync()) ([Windows.Media.Control.GlobalSystemMediaTransportControlsSessionMediaProperties])
+  if ([string]::IsNullOrEmpty($info.Title)) { continue } # Skip empty/dummy sessions
+
   $pb = $s.GetPlaybackInfo()
   $score = 1
   $st = [string]$pb.PlaybackStatus

@@ -114,16 +114,16 @@ html, body, #root {
 }
 
 .island-idle-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
+  width: 14px;
+  height: 4px;
+  border-radius: 2px;
   background: var(--text-tertiary);
-  animation: pulse-idle 2.5s ease-in-out infinite;
+  animation: pulse-idle 3s ease-in-out infinite;
 }
 
 @keyframes pulse-idle {
-  0%, 100% { opacity: 0.3; transform: scale(1); }
-  50% { opacity: 0.7; transform: scale(1.4); }
+  0%, 100% { opacity: 0.25; transform: scale(0.9); }
+  50% { opacity: 0.6; transform: scale(1.1); }
 }
 
 /* =============================================================
