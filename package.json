@@ -4,7 +4,7 @@
   "description": "Dynamic Island for Windows — a sleek always-on-top overlay with media controls and calendar integration",
   "main": "electron/main.js",
   "scripts": {
-    "dev": "concurrently --kill-others \"vite\" \"wait-on tcp:5173 && cross-env NODE_ENV=development electron .\"",
+    "dev": "node scripts/dev.js",
     "build": "vite build && electron-builder",
     "start": "cross-env NODE_ENV=production electron .",
     "pack": "vite build && electron-builder --dir"

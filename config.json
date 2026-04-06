@@ -1,0 +1,6 @@
+{
+  "ports": {
+    "devServer": 9090
+  },
+  "description": "Configuration file for WinIsland. You can change the devServer port here if you have conflicts."
+}

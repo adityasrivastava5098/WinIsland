@@ -160,9 +160,11 @@ class MonitorManager {
 
     const loadContent = () => {
       if (win.isDestroyed()) return;
+      const config = require('../config.json');
+      const devPort = config.ports.devServer || 5173;
       entry.isLoaded = false;
       if (this.isDev) {
-        win.loadURL('http://localhost:5173').catch(() => {
+        win.loadURL(`http://localhost:${devPort}`).catch(() => {
           setTimeout(() => loadContent(), 2000);
         });
       } else {
