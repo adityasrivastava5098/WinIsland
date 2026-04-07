@@ -1,84 +1,44 @@
 // ============================================================
-// Dynamic Island for Windows — Main Process (v3)
-// Entry point for Electron. Manages IPC, orchestrates
-// monitors, media, calendar, and tray modules.
+// WinIsland — Main Process
 // ============================================================
 
 const { app, ipcMain, screen, shell, BrowserWindow } = require('electron');
-
-// Force software rendering to avoid GPU shared-context failures
-// on virtualized/restricted Windows environments.
-app.disableHardwareAcceleration();
-
-// ---- ENHANCED COMPATIBILITY MODE ----
-// Specific flags to bypass D3D11 virtualization context failures
-app.commandLine.appendSwitch('disable-gpu-sandbox');
-app.commandLine.appendSwitch('no-sandbox');
-app.commandLine.appendSwitch('disable-d3d11');
-app.commandLine.appendSwitch('use-angle', 'd3d9'); // Fallback to D3D9 which is more stable in virtual/restricted environments
-app.commandLine.appendSwitch('ignore-gpu-blocklist');
-app.commandLine.appendSwitch('disable-software-rasterizer');
-app.commandLine.appendSwitch('disable-gpu-rasterization');
-// -------------------------------------
-
-const { execFile } = require('child_process');
 const path = require('path');
 const configManager = require('./configManager');
 const MonitorManager = require('./monitorManager');
 const MediaManager = require('./mediaManager');
 const CalendarManager = require('./calendarManager');
 const TrayManager = require('./trayManager');
+const startupManager = require('./startupManager');
 
-// ---- Fix GPU and Cache Issues ----
-// Disable GPU acceleration as it can cause crashes on certain systems/drivers
-app.commandLine.appendSwitch('disable-gpu');
-app.commandLine.appendSwitch('disable-software-rasterizer');
-app.commandLine.appendSwitch('disable-gpu-compositing');
-app.commandLine.appendSwitch('disable-gpu-rasterization');
-app.commandLine.appendSwitch('disable-gpu-sandbox');
-app.commandLine.appendSwitch('no-sandbox'); // Necessary for some permission-locked environments
-
-// ---- Custom Data Path (Fixes "Access Denied" Cache Errors) ----
-// By moving the user data to a local project folder, we bypass restricted %AppData% permissions
-const userDataPath = path.join(process.cwd(), '.winisland_data');
-app.setPath('userData', userDataPath);
-// ----------------------------------
-
-// Prevent multiple instances
+// Single Instance Lock
 const gotLock = app.requestSingleInstanceLock();
 if (!gotLock) {
   app.quit();
 }
 
-// ---- Global references ----
+// Treat local (unpackaged) runs as development
+const isDev = !app.isPackaged;
+
+// Global references
 let monitorManager = null;
 let mediaManager = null;
 let calendarManager = null;
 let trayManager = null;
 
-// Treat local (unpackaged) runs as development by default.
-// This avoids accidental file://dist/index.html loads when running `npx electron .`.
-const isDev = !app.isPackaged && process.env.NODE_ENV !== 'production';
+// Parse CLI Flags
+const isStartMinimized = process.argv.includes('--start-minimized');
 
-// ============================================================
-// App ready
-// ============================================================
-app.whenReady().then(async () => {
-  // Sync Startup Settings on launch
+function bootstrap() {
+  // 1. Verify startup registry on every launch
   const runAtStartup = configManager.get('runAtStartup', false);
-  const settings = {
-    openAtLogin: runAtStartup,
-  };
-  if (!app.isPackaged) {
-    // If dev, ensure logic points back to our project folder
-    settings.path = process.execPath;
-    settings.args = [path.resolve(process.argv[1])];
-  }
-  app.setLoginItemSettings(settings);
+  startupManager.verify(runAtStartup);
 
+  // 2. Create island windows
   monitorManager = new MonitorManager(isDev);
   monitorManager.createIslandWindows();
 
+  // 3. Start polling services
   mediaManager = new MediaManager();
   mediaManager.startPolling((mediaState) => {
     monitorManager.broadcastToAll('media-update', mediaState);
@@ -89,92 +49,85 @@ app.whenReady().then(async () => {
     monitorManager.broadcastToAll('calendar-update', events);
   });
 
+  // 4. System tray
   trayManager = new TrayManager(app, monitorManager);
 
+  // 5. Display change listeners
   screen.on('display-added', () => monitorManager.rebuildWindows());
   screen.on('display-removed', () => monitorManager.rebuildWindows());
   screen.on('display-metrics-changed', () => monitorManager.repositionAll());
+
+  // Handle minimized launch
+  if (isStartMinimized) {
+    // In start-minimized mode, we don't show windows initially if they were supposed to be hidden.
+    // However, Dynamic Island is always-on-top but can be collapsed.
+    // We'll let the renderer handle the initial collapsed state based on this flag if needed.
+    monitorManager.broadcastToAll('startup-minimized', true);
+  }
+}
+
+app.whenReady().then(() => {
+  bootstrap();
 });
 
-// ============================================================
-// IPC Handlers
-// ============================================================
+// Second instance handling
+app.on('second-instance', () => {
+  if (monitorManager) {
+    monitorManager.windows.forEach(entry => {
+      if (!entry.win.isDestroyed()) {
+        entry.win.show();
+        entry.win.focus();
+      }
+    });
+  }
+});
 
-// Media controls
+// IPC Handlers
+ipcMain.handle('get-startup-status', () => {
+  return {
+    isDev,
+    configEnabled: configManager.get('runAtStartup', false),
+    systemStatus: startupManager.checkStartupStatus(),
+    exePath: app.getPath('exe')
+  };
+});
+
+ipcMain.handle('toggle-startup', (_event, enabled) => {
+  if (!app.isPackaged) return { success: false, error: 'Startup toggle only available in production' };
+  
+  configManager.set('runAtStartup', enabled);
+  if (enabled) {
+    return startupManager.enable();
+  } else {
+    return startupManager.disable();
+  }
+});
+
+ipcMain.handle('test-startup', () => {
+  // Simulation: relaunch app with --start-minimized
+  const { spawn } = require('child_process');
+  spawn(app.getPath('exe'), ['--start-minimized'], {
+    detached: true,
+    stdio: 'ignore'
+  }).unref();
+  return { success: true };
+});
+
+// Media/Calendar Handlers (Keep existing)
 ipcMain.handle('media-play-pause', () => mediaManager?.sendCommand('play-pause'));
 ipcMain.handle('media-next', () => mediaManager?.sendCommand('next'));
 ipcMain.handle('media-previous', () => mediaManager?.sendCommand('previous'));
 ipcMain.handle('get-media-state', () => mediaManager?.getCurrentState() || null);
+ipcMain.handle('media-seek', (_event, pos) => mediaManager?.seekTo(pos));
+ipcMain.handle('get-calendar-events', () => calendarManager?.getEvents() || []);
 
-// Seek to position (seconds)
-ipcMain.handle('media-seek', (_event, positionSeconds) => {
-  return mediaManager?.seekTo(positionSeconds);
-});
-
-// Toggle click-through for transparent regions
 ipcMain.on('set-ignore-mouse-events', (event, ignore, options) => {
   const win = BrowserWindow.fromWebContents(event.sender);
   win?.setIgnoreMouseEvents(ignore, options);
 });
 
-// Calendar events
-ipcMain.handle('get-calendar-events', () => calendarManager?.getEvents() || []);
-
-// Open source media app
-ipcMain.handle('open-source-app', async (_event, sourceId) => {
-  if (!sourceId) return false;
-  try {
-    const s = sourceId.toLowerCase();
-
-    // Spotify
-    if (s.includes('spotify')) {
-      await shell.openExternal('spotify:');
-      return true;
-    }
-
-    // Apple Music — use start command to activate the UWP app
-    if (s.includes('apple') || s.includes('itunes')) {
-      return new Promise((resolve) => {
-        execFile('cmd.exe', ['/c', 'start', 'shell:AppsFolder\\AppleInc.AppleMusic_nzyj5cx40ttqa!App'], { timeout: 5000 }, (err) => {
-          if (err) {
-            // Fallback: try generic start
-            execFile('cmd.exe', ['/c', 'start', 'apple-music:'], { timeout: 5000 }, () => resolve(true));
-          } else {
-            resolve(true);
-          }
-        });
-      });
-    }
-
-    // Groove Music / Zune
-    if (s.includes('zunemusic') || s.includes('groove')) {
-      await shell.openExternal('mswindowsmusic:');
-      return true;
-    }
-
-    // Edge — bring to front
-    if (s.includes('edge') || s.includes('msedge')) {
-      execFile('cmd.exe', ['/c', 'start', 'msedge:'], { timeout: 3000 }, () => {});
-      return true;
-    }
-
-    // Chrome
-    if (s.includes('chrome')) {
-      execFile('cmd.exe', ['/c', 'start', 'chrome:'], { timeout: 3000 }, () => {});
-      return true;
-    }
-
-    return false;
-  } catch {
-    return false;
-  }
-});
-
-// ============================================================
-// App lifecycle
-// ============================================================
 app.on('window-all-closed', () => {
-  // keep running via tray
+  // Stay running in tray
 });
 
 app.on('before-quit', () => {

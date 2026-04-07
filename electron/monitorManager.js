@@ -7,6 +7,7 @@
 
 const { BrowserWindow, screen } = require('electron');
 const path = require('path');
+const configManager = require('./configManager');
 
 const ISLAND_WIDTH = 380;
 const ISLAND_HEIGHT = 220;
@@ -160,8 +161,7 @@ class MonitorManager {
 
     const loadContent = () => {
       if (win.isDestroyed()) return;
-      const config = require('../config.json');
-      const devPort = config.ports.devServer || 5173;
+      const devPort = configManager.get('ports', { devServer: 5173 }).devServer || 5173;
       entry.isLoaded = false;
       if (this.isDev) {
         win.loadURL(`http://localhost:${devPort}`).catch(() => {

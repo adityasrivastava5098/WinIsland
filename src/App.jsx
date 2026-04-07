@@ -118,11 +118,13 @@ function App() {
     });
   }, [handleMediaUpdate]);
 
-  // ----------------------------------------------------------
-  // Toggle between music and calendar modes
-  // ----------------------------------------------------------
+  // Toggle between music, calendar, and settings modes
   const toggleMode = useCallback(() => {
-    setMode((prev) => (prev === 'music' ? 'calendar' : 'music'));
+    setMode((prev) => {
+      if (prev === 'music') return 'calendar';
+      if (prev === 'calendar') return 'settings';
+      return 'music';
+    });
   }, []);
 
   return (

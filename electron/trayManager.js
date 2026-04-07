@@ -26,24 +26,39 @@ class TrayManager {
     this.tray = new Tray(trayIcon);
     this.tray.setToolTip('Dynamic Island');
 
+    this._buildContextMenu();
+
+    // Double-click tray icon → toggle visibility
+    this.tray.on('double-click', () => {
+      this.monitorManager.toggleVisibility();
+    });
+  }
+
+  // ----------------------------------------------------------
+  // Build / rebuild the context menu with current settings
+  // ----------------------------------------------------------
+  _buildContextMenu() {
     const configManager = require('./configManager');
+    const startupManager = require('./startupManager');
 
     const contextMenu = Menu.buildFromTemplate([
       {
-        label: 'WinIsland v1.0',
-        enabled: false,  // header label
+        label: 'WinIsland',
+        enabled: false,
       },
       { type: 'separator' },
+      {
+        label: 'Open',
+        click: () => {
+          this.monitorManager.windows.forEach(entry => {
+            if (!entry.win.isDestroyed()) entry.win.show();
+          });
+        },
+      },
       {
         label: 'Toggle Visibility',
         click: () => {
           this.monitorManager.toggleVisibility();
-        },
-      },
-      {
-        label: 'Reposition Islands',
-        click: () => {
-          this.monitorManager.repositionAll();
         },
       },
       { type: 'separator' },
@@ -51,23 +66,17 @@ class TrayManager {
         label: 'Start with Windows',
         type: 'checkbox',
         checked: configManager.get('runAtStartup', false),
+        enabled: this.app.isPackaged,
         click: (menuItem) => {
           const isEnabled = menuItem.checked;
-          configManager.set('runAtStartup', isEnabled);
-
-          // Configure OS startup registry
-          const settings = {
-            openAtLogin: isEnabled,
-          };
-
-          // If not packaged (dev mode), we MUST specify the path and args
-          // otherwise it just launches an empty electron.exe shell on restart.
-          if (!this.app.isPackaged) {
-            settings.path = process.execPath;
-            settings.args = [path.resolve(process.argv[1])];
+          if (isEnabled) {
+            startupManager.enable();
+            configManager.set('runAtStartup', true);
+          } else {
+            startupManager.disable();
+            configManager.set('runAtStartup', false);
           }
-
-          this.app.setLoginItemSettings(settings);
+          this._buildContextMenu();
         },
       },
       { type: 'separator' },
@@ -80,11 +89,6 @@ class TrayManager {
     ]);
 
     this.tray.setContextMenu(contextMenu);
-
-    // Double-click tray icon → toggle visibility
-    this.tray.on('double-click', () => {
-      this.monitorManager.toggleVisibility();
-    });
   }
 
   // ----------------------------------------------------------
