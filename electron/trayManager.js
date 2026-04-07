@@ -26,10 +26,12 @@ class TrayManager {
     this.tray = new Tray(trayIcon);
     this.tray.setToolTip('Dynamic Island');
 
+    const configManager = require('./configManager');
+
     const contextMenu = Menu.buildFromTemplate([
       {
-        label: 'Dynamic Island',
-        enabled: false,  // header label, not clickable
+        label: 'WinIsland v1.0',
+        enabled: false,  // header label
       },
       { type: 'separator' },
       {
@@ -48,11 +50,24 @@ class TrayManager {
       {
         label: 'Start with Windows',
         type: 'checkbox',
-        checked: this.app.getLoginItemSettings().openAtLogin,
+        checked: configManager.get('runAtStartup', false),
         click: (menuItem) => {
-          this.app.setLoginItemSettings({
-            openAtLogin: menuItem.checked,
-          });
+          const isEnabled = menuItem.checked;
+          configManager.set('runAtStartup', isEnabled);
+
+          // Configure OS startup registry
+          const settings = {
+            openAtLogin: isEnabled,
+          };
+
+          // If not packaged (dev mode), we MUST specify the path and args
+          // otherwise it just launches an empty electron.exe shell on restart.
+          if (!this.app.isPackaged) {
+            settings.path = process.execPath;
+            settings.args = [path.resolve(process.argv[1])];
+          }
+
+          this.app.setLoginItemSettings(settings);
         },
       },
       { type: 'separator' },

@@ -23,6 +23,7 @@ app.commandLine.appendSwitch('disable-gpu-rasterization');
 
 const { execFile } = require('child_process');
 const path = require('path');
+const configManager = require('./configManager');
 const MonitorManager = require('./monitorManager');
 const MediaManager = require('./mediaManager');
 const CalendarManager = require('./calendarManager');
@@ -63,6 +64,18 @@ const isDev = !app.isPackaged && process.env.NODE_ENV !== 'production';
 // App ready
 // ============================================================
 app.whenReady().then(async () => {
+  // Sync Startup Settings on launch
+  const runAtStartup = configManager.get('runAtStartup', false);
+  const settings = {
+    openAtLogin: runAtStartup,
+  };
+  if (!app.isPackaged) {
+    // If dev, ensure logic points back to our project folder
+    settings.path = process.execPath;
+    settings.args = [path.resolve(process.argv[1])];
+  }
+  app.setLoginItemSettings(settings);
+
   monitorManager = new MonitorManager(isDev);
   monitorManager.createIslandWindows();
 
