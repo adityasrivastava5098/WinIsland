@@ -26,7 +26,24 @@ class TrayManager {
     this.tray = new Tray(trayIcon);
     this.tray.setToolTip('Dynamic Island');
 
+    this._buildContextMenu();
+
+    // Double-click tray icon → toggle visibility
+    this.tray.on('double-click', () => {
+      this.monitorManager.toggleVisibility();
+    });
+  }
+
+  // ----------------------------------------------------------
+  // Build / rebuild the context menu with current settings
+  // ----------------------------------------------------------
+  _buildContextMenu() {
     const configManager = require('./configManager');
+    const startupManager = require('./startupManager');
+
+    const runAtStartup = configManager.get('runAtStartup', false);
+    const startMinimized = configManager.get('startMinimized', true);
+    const delaySeconds = configManager.get('startupDelaySeconds', 2);
 
     const contextMenu = Menu.buildFromTemplate([
       {
@@ -47,29 +64,77 @@ class TrayManager {
         },
       },
       { type: 'separator' },
+
+      // ---- Startup Settings Section ----
       {
-        label: 'Start with Windows',
+        label: 'Startup',
+        enabled: false, // section header
+      },
+      {
+        label: '  Start with Windows',
         type: 'checkbox',
-        checked: configManager.get('runAtStartup', false),
+        checked: runAtStartup,
         click: (menuItem) => {
           const isEnabled = menuItem.checked;
           configManager.set('runAtStartup', isEnabled);
 
-          // Configure OS startup registry
-          const settings = {
-            openAtLogin: isEnabled,
-          };
-
-          // If not packaged (dev mode), we MUST specify the path and args
-          // otherwise it just launches an empty electron.exe shell on restart.
-          if (!this.app.isPackaged) {
-            settings.path = process.execPath;
-            settings.args = [path.resolve(process.argv[1])];
+          if (isEnabled) {
+            const result = startupManager.enable({
+              startMinimized: configManager.get('startMinimized', true),
+              delaySeconds: configManager.get('startupDelaySeconds', 2),
+            });
+            console.log(`[TrayManager] Startup enabled via ${result.method}`);
+          } else {
+            startupManager.disable();
+            console.log('[TrayManager] Startup disabled');
           }
 
-          this.app.setLoginItemSettings(settings);
+          // Rebuild menu to reflect possible changes
+          this._buildContextMenu();
         },
       },
+      {
+        label: '  Start Minimized',
+        type: 'checkbox',
+        checked: startMinimized,
+        enabled: runAtStartup, // Only configurable when startup is enabled
+        click: (menuItem) => {
+          configManager.set('startMinimized', menuItem.checked);
+
+          // Re-apply startup with new options
+          if (configManager.get('runAtStartup', false)) {
+            startupManager.enable({
+              startMinimized: menuItem.checked,
+              delaySeconds: configManager.get('startupDelaySeconds', 2),
+            });
+          }
+
+          this._buildContextMenu();
+        },
+      },
+      {
+        label: `  Boot Delay: ${delaySeconds}s`,
+        enabled: runAtStartup,
+        submenu: [0, 1, 2, 3, 5].map((sec) => ({
+          label: `${sec} second${sec !== 1 ? 's' : ''}`,
+          type: 'radio',
+          checked: delaySeconds === sec,
+          click: () => {
+            configManager.set('startupDelaySeconds', sec);
+
+            // Re-apply startup with new delay
+            if (configManager.get('runAtStartup', false)) {
+              startupManager.enable({
+                startMinimized: configManager.get('startMinimized', true),
+                delaySeconds: sec,
+              });
+            }
+
+            this._buildContextMenu();
+          },
+        })),
+      },
+
       { type: 'separator' },
       {
         label: 'Quit',
@@ -80,11 +145,6 @@ class TrayManager {
     ]);
 
     this.tray.setContextMenu(contextMenu);
-
-    // Double-click tray icon → toggle visibility
-    this.tray.on('double-click', () => {
-      this.monitorManager.toggleVisibility();
-    });
   }
 
   // ----------------------------------------------------------

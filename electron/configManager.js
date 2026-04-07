@@ -16,7 +16,7 @@ class ConfigManager {
     } catch (err) {
       console.error('Error loading config.json:', err);
     }
-    return { ports: { devServer: 9090 }, runAtStartup: false };
+    return { ports: { devServer: 9090 }, runAtStartup: false, startMinimized: true, startupDelaySeconds: 2 };
   }
 
   get(key, defaultValue) {

@@ -32,4 +32,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.on('calendar-update', handler);
     return () => ipcRenderer.removeListener('calendar-update', handler);
   },
+
+  // ---- Startup Settings ----
+  getStartupStatus: () => ipcRenderer.invoke('get-startup-status'),
+  setStartupEnabled: (enabled) => ipcRenderer.invoke('set-startup-enabled', enabled),
+  setStartupOptions: (options) => ipcRenderer.invoke('set-startup-options', options),
 });

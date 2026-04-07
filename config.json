@@ -2,6 +2,8 @@
   "ports": {
     "devServer": 9090
   },
-  "runAtStartup": true,
+  "runAtStartup": false,
+  "startMinimized": true,
+  "startupDelaySeconds": 2,
   "description": "Configuration file for WinIsland. You can change the devServer port here if you have conflicts."
 }

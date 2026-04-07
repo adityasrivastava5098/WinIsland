@@ -1,7 +1,7 @@
 // ============================================================
-// Dynamic Island for Windows — Main Process (v3)
+// Dynamic Island for Windows — Main Process (v4)
 // Entry point for Electron. Manages IPC, orchestrates
-// monitors, media, calendar, and tray modules.
+// monitors, media, calendar, tray, and startup modules.
 // ============================================================
 
 const { app, ipcMain, screen, shell, BrowserWindow } = require('electron');
@@ -28,6 +28,7 @@ const MonitorManager = require('./monitorManager');
 const MediaManager = require('./mediaManager');
 const CalendarManager = require('./calendarManager');
 const TrayManager = require('./trayManager');
+const startupManager = require('./startupManager');
 
 // ---- Fix GPU and Cache Issues ----
 // Disable GPU acceleration as it can cause crashes on certain systems/drivers
@@ -44,7 +45,13 @@ const userDataPath = path.join(process.cwd(), '.winisland_data');
 app.setPath('userData', userDataPath);
 // ----------------------------------
 
-// Prevent multiple instances
+// ---- Parse CLI Flags ----
+const isStartMinimized = process.argv.includes('--start-minimized');
+const startupDelayArg = process.argv.find(a => a.startsWith('--startup-delay='));
+const startupDelay = startupDelayArg ? parseInt(startupDelayArg.split('=')[1], 10) * 1000 : 0;
+
+// ---- Single Instance Lock ----
+// Prevent duplicate instances — critical for a background utility
 const gotLock = app.requestSingleInstanceLock();
 if (!gotLock) {
   app.quit();
@@ -61,39 +68,78 @@ let trayManager = null;
 const isDev = !app.isPackaged && process.env.NODE_ENV !== 'production';
 
 // ============================================================
-// App ready
+// Bootstrap — the actual initialization logic
 // ============================================================
-app.whenReady().then(async () => {
-  // Sync Startup Settings on launch
+function bootstrap() {
+  // ----------------------------------------------------------
+  // Verify startup registry/shortcut on every launch
+  // ----------------------------------------------------------
   const runAtStartup = configManager.get('runAtStartup', false);
-  const settings = {
-    openAtLogin: runAtStartup,
-  };
-  if (!app.isPackaged) {
-    // If dev, ensure logic points back to our project folder
-    settings.path = process.execPath;
-    settings.args = [path.resolve(process.argv[1])];
-  }
-  app.setLoginItemSettings(settings);
+  const startMinimizedPref = configManager.get('startMinimized', true);
+  const delaySecondsPref = configManager.get('startupDelaySeconds', 2);
 
+  startupManager.verify(runAtStartup, {
+    startMinimized: startMinimizedPref,
+    delaySeconds: delaySecondsPref,
+  });
+
+  // ----------------------------------------------------------
+  // Create island windows on all monitors
+  // ----------------------------------------------------------
   monitorManager = new MonitorManager(isDev);
   monitorManager.createIslandWindows();
 
+  // ----------------------------------------------------------
+  // Start media polling
+  // ----------------------------------------------------------
   mediaManager = new MediaManager();
   mediaManager.startPolling((mediaState) => {
     monitorManager.broadcastToAll('media-update', mediaState);
   });
 
+  // ----------------------------------------------------------
+  // Start calendar polling
+  // ----------------------------------------------------------
   calendarManager = new CalendarManager();
   calendarManager.startPolling((events) => {
     monitorManager.broadcastToAll('calendar-update', events);
   });
 
+  // ----------------------------------------------------------
+  // System tray (includes startup toggle)
+  // ----------------------------------------------------------
   trayManager = new TrayManager(app, monitorManager);
 
+  // ----------------------------------------------------------
+  // Display change listeners
+  // ----------------------------------------------------------
   screen.on('display-added', () => monitorManager.rebuildWindows());
   screen.on('display-removed', () => monitorManager.rebuildWindows());
   screen.on('display-metrics-changed', () => monitorManager.repositionAll());
+}
+
+// ============================================================
+// App ready
+// ============================================================
+app.whenReady().then(async () => {
+  if (startupDelay > 0 && isStartMinimized) {
+    // Delay launch for smoother system startup when auto-started
+    console.log(`[WinIsland] Delaying startup by ${startupDelay / 1000}s for smoother boot...`);
+    setTimeout(() => bootstrap(), startupDelay);
+  } else {
+    bootstrap();
+  }
+});
+
+// When a second instance is launched, just focus/show existing windows
+app.on('second-instance', () => {
+  if (monitorManager) {
+    for (const [, entry] of monitorManager.windows) {
+      if (!entry.win.isDestroyed()) {
+        entry.win.show();
+      }
+    }
+  }
 });
 
 // ============================================================
@@ -119,6 +165,45 @@ ipcMain.on('set-ignore-mouse-events', (event, ignore, options) => {
 
 // Calendar events
 ipcMain.handle('get-calendar-events', () => calendarManager?.getEvents() || []);
+
+// Startup settings IPC — allows renderer to query/toggle startup
+ipcMain.handle('get-startup-status', () => {
+  return {
+    enabled: configManager.get('runAtStartup', false),
+    startMinimized: configManager.get('startMinimized', true),
+    delaySeconds: configManager.get('startupDelaySeconds', 2),
+    systemStatus: startupManager.getStatus(),
+  };
+});
+
+ipcMain.handle('set-startup-enabled', (_event, enabled) => {
+  configManager.set('runAtStartup', enabled);
+  if (enabled) {
+    return startupManager.enable({
+      startMinimized: configManager.get('startMinimized', true),
+      delaySeconds: configManager.get('startupDelaySeconds', 2),
+    });
+  } else {
+    return startupManager.disable();
+  }
+});
+
+ipcMain.handle('set-startup-options', (_event, options) => {
+  if (options.startMinimized !== undefined) {
+    configManager.set('startMinimized', options.startMinimized);
+  }
+  if (options.delaySeconds !== undefined) {
+    configManager.set('startupDelaySeconds', options.delaySeconds);
+  }
+  // Re-apply if startup is enabled
+  if (configManager.get('runAtStartup', false)) {
+    return startupManager.enable({
+      startMinimized: configManager.get('startMinimized', true),
+      delaySeconds: configManager.get('startupDelaySeconds', options.delaySeconds || 2),
+    });
+  }
+  return { success: true };
+});
 
 // Open source media app
 ipcMain.handle('open-source-app', async (_event, sourceId) => {
