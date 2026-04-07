@@ -51,6 +51,33 @@ npx electron .
 - **Click Outside**: Automatically collapses the expanded island back into its minimal pill state.
 - **Top-Right Button**: Toggle between Music Player and Calendar views.
 
+## 📦 Building for Production
+
+<details>
+<summary><b>Click to view Build Instructions</b></summary>
+
+### 🛠️ Prerequisites
+- [Node.js](https://nodejs.org/) installed.
+- Run `npm install` to set up dependencies.
+
+### 🧪 Test Build (Unpacked)
+For a quick test without creating a full installer:
+```bash
+npm run pack
+```
+- **EXE Location**: `dist-electron/win-unpacked/WinIsland.exe`
+- *Note: This creates a folder containing the raw app files—great for quick testing!*
+
+### 🚢 Production Build (Installer)
+To create a professional, distributable installer:
+```bash
+npm run dist
+```
+- **EXE Location**: `dist-electron/WinIsland Setup 1.0.0.exe`
+- *Note: This generates a single `.exe` installer (via NSIS) that installs the app to Program Files.*
+
+</details>
+
 ## 🏗️ Tech Stack
 
 <details>

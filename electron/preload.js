@@ -35,6 +35,6 @@ contextBridge.exposeInMainWorld('electronAPI', {
 
   // ---- Startup Settings ----
   getStartupStatus: () => ipcRenderer.invoke('get-startup-status'),
-  setStartupEnabled: (enabled) => ipcRenderer.invoke('set-startup-enabled', enabled),
-  setStartupOptions: (options) => ipcRenderer.invoke('set-startup-options', options),
+  toggleStartup: (enabled) => ipcRenderer.invoke('toggle-startup', enabled),
+  testStartup: () => ipcRenderer.invoke('test-startup'),
 });

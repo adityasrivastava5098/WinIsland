@@ -1,20 +1,25 @@
 {
-  "name": "dynamic-island",
+  "name": "winisland",
   "version": "1.0.0",
   "description": "Dynamic Island for Windows — a sleek always-on-top overlay with media controls and calendar integration",
   "main": "electron/main.js",
   "scripts": {
-    "dev": "node scripts/dev.js",
-    "build": "vite build && electron-builder",
-    "start": "cross-env NODE_ENV=production electron .",
-    "pack": "vite build && electron-builder --dir"
+    "dev": "concurrently \"vite\" \"wait-on http://localhost:5173 && electron .\"",
+    "build": "vite build",
+    "dist": "npm run build && electron-builder",
+    "postinstall": "electron-builder install-app-deps",
+    "pack": "npm run build && electron-builder --dir"
   },
-  "keywords": ["dynamic-island", "overlay", "windows", "media-controls"],
+  "keywords": [
+    "dynamic-island",
+    "overlay",
+    "windows",
+    "media-controls"
+  ],
   "author": "Aditya Srivastava",
   "license": "MIT",
   "type": "commonjs",
   "dependencies": {
-    "electron": "^41.1.0",
     "framer-motion": "^12.38.0",
     "react": "^19.2.4",
     "react-dom": "^19.2.4"
@@ -23,30 +28,38 @@
     "@vitejs/plugin-react": "^6.0.1",
     "concurrently": "^9.2.1",
     "cross-env": "^10.1.0",
+    "electron": "^41.1.0",
     "electron-builder": "^26.8.1",
     "vite": "^8.0.3",
     "wait-on": "^9.0.4"
   },
   "build": {
-    "appId": "com.dynamicisland.windows",
-    "productName": "Dynamic Island",
+    "appId": "com.winisland.app",
+    "productName": "WinIsland",
+    "forceCodeSigning": false,
     "directories": {
       "output": "dist-electron"
     },
     "files": [
       "electron/**/*",
       "dist/**/*",
-      "assets/**/*"
+      "assets/**/*",
+      "config.json"
     ],
     "win": {
       "target": "nsis",
-      "icon": "assets/icon.png"
+      "icon": "assets/icon.png",
+      "requestedExecutionLevel": "asInvoker",
+      "signAndEditExecutable": false
     },
     "nsis": {
       "oneClick": false,
+      "perMachine": true,
       "allowToChangeInstallationDirectory": true,
-      "installerIcon": "assets/icon.png",
-      "uninstallerIcon": "assets/icon.png"
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "WinIsland",
+      "runAfterFinish": true
     }
   }
 }

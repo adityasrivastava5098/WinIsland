@@ -41,100 +41,44 @@ class TrayManager {
     const configManager = require('./configManager');
     const startupManager = require('./startupManager');
 
-    const runAtStartup = configManager.get('runAtStartup', false);
-    const startMinimized = configManager.get('startMinimized', true);
-    const delaySeconds = configManager.get('startupDelaySeconds', 2);
-
     const contextMenu = Menu.buildFromTemplate([
       {
-        label: 'WinIsland v1.0',
-        enabled: false,  // header label
+        label: 'WinIsland',
+        enabled: false,
       },
       { type: 'separator' },
+      {
+        label: 'Open',
+        click: () => {
+          this.monitorManager.windows.forEach(entry => {
+            if (!entry.win.isDestroyed()) entry.win.show();
+          });
+        },
+      },
       {
         label: 'Toggle Visibility',
         click: () => {
           this.monitorManager.toggleVisibility();
         },
       },
-      {
-        label: 'Reposition Islands',
-        click: () => {
-          this.monitorManager.repositionAll();
-        },
-      },
       { type: 'separator' },
-
-      // ---- Startup Settings Section ----
       {
-        label: 'Startup',
-        enabled: false, // section header
-      },
-      {
-        label: '  Start with Windows',
+        label: 'Start with Windows',
         type: 'checkbox',
-        checked: runAtStartup,
+        checked: configManager.get('runAtStartup', false),
+        enabled: this.app.isPackaged,
         click: (menuItem) => {
           const isEnabled = menuItem.checked;
-          configManager.set('runAtStartup', isEnabled);
-
           if (isEnabled) {
-            const result = startupManager.enable({
-              startMinimized: configManager.get('startMinimized', true),
-              delaySeconds: configManager.get('startupDelaySeconds', 2),
-            });
-            console.log(`[TrayManager] Startup enabled via ${result.method}`);
+            startupManager.enable();
+            configManager.set('runAtStartup', true);
           } else {
             startupManager.disable();
-            console.log('[TrayManager] Startup disabled');
+            configManager.set('runAtStartup', false);
           }
-
-          // Rebuild menu to reflect possible changes
           this._buildContextMenu();
         },
       },
-      {
-        label: '  Start Minimized',
-        type: 'checkbox',
-        checked: startMinimized,
-        enabled: runAtStartup, // Only configurable when startup is enabled
-        click: (menuItem) => {
-          configManager.set('startMinimized', menuItem.checked);
-
-          // Re-apply startup with new options
-          if (configManager.get('runAtStartup', false)) {
-            startupManager.enable({
-              startMinimized: menuItem.checked,
-              delaySeconds: configManager.get('startupDelaySeconds', 2),
-            });
-          }
-
-          this._buildContextMenu();
-        },
-      },
-      {
-        label: `  Boot Delay: ${delaySeconds}s`,
-        enabled: runAtStartup,
-        submenu: [0, 1, 2, 3, 5].map((sec) => ({
-          label: `${sec} second${sec !== 1 ? 's' : ''}`,
-          type: 'radio',
-          checked: delaySeconds === sec,
-          click: () => {
-            configManager.set('startupDelaySeconds', sec);
-
-            // Re-apply startup with new delay
-            if (configManager.get('runAtStartup', false)) {
-              startupManager.enable({
-                startMinimized: configManager.get('startMinimized', true),
-                delaySeconds: sec,
-              });
-            }
-
-            this._buildContextMenu();
-          },
-        })),
-      },
-
       { type: 'separator' },
       {
         label: 'Quit',
