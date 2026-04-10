@@ -5,6 +5,5 @@
   "runAtStartup": true,
   "startMinimized": true,
   "startupDelaySeconds": 2,
-  "enableCalendar": true,
   "description": "Configuration file for WinIsland. You can change the devServer port here if you have conflicts."
 }

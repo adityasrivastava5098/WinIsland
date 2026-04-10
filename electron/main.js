@@ -44,12 +44,10 @@ function bootstrap() {
     monitorManager.broadcastToAll('media-update', mediaState);
   });
 
-  if (configManager.get('enableCalendar', true)) {
-    calendarManager = new CalendarManager();
-    calendarManager.startPolling((events) => {
-      monitorManager.broadcastToAll('calendar-update', events);
-    });
-  }
+  calendarManager = new CalendarManager();
+  calendarManager.startPolling((events) => {
+    monitorManager.broadcastToAll('calendar-update', events);
+  });
 
   // 4. System tray
   trayManager = new TrayManager(app, monitorManager);
