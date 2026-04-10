@@ -1,4 +1,4 @@
-# 🏝️ WinIsland
+#  WinIsland
 
 A premium, interactive Dynamic Island experience for Windows. Inspired by the iPhone, built for your desktop.
 
@@ -8,7 +8,7 @@ A premium, interactive Dynamic Island experience for Windows. Inspired by the iP
   <img src="./assets/calendar.png" width="32%" />
 </p>
 
-## ✨ Features
+##  Features
 
 - **Multi-Monitor Support**: Detects and pins an island to the top of every connected display.
 - **Always-On-Top**: Stays above all apps (even in fullscreen where possible).
@@ -20,15 +20,15 @@ A premium, interactive Dynamic Island experience for Windows. Inspired by the iP
   - **One-Click Launch**: Click the album art to immediately open the source music app.
 - **Calendar Integration**: A clean, monthly grid view with today's date highlighting and event indicators.
 
-## 🚀 Quick Start
+##  Quick Start
 
 The fastest way to get started is to use the provided runner:
 
 1.  Clone the repository or download the source.
 2.  Double-click **`winsland.bat`**.
-3.  Enjoy your island! 🏝️
+3.  Enjoy your island! 
 
-## 🛠️ Manual Installation
+##  Manual Installation
 
 If you prefer to install manually:
 
@@ -51,7 +51,7 @@ npx electron .
 - **Click Outside**: Automatically collapses the expanded island back into its minimal pill state.
 - **Top-Right Button**: Toggle between Music Player and Calendar views.
 
-## 📦 Building for Production
+##  Building for Production
 
 <details>
 <summary><b>Click to view Build Instructions</b></summary>
@@ -60,7 +60,7 @@ npx electron .
 - [Node.js](https://nodejs.org/) installed.
 - Run `npm install` to set up dependencies.
 
-### 🧪 Test Build (Unpacked)
+###  Test Build (Unpacked)
 For a quick test without creating a full installer:
 ```bash
 npm run pack
@@ -78,7 +78,7 @@ npm run dist
 
 </details>
 
-## 🏗️ Tech Stack
+## Tech Stack
 
 <details>
 <summary>Click to view technologies used</summary>
