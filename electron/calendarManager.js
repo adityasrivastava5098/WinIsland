@@ -1,81 +1,73 @@
 // ============================================================
-// Calendar Manager
-// Fetches upcoming calendar events from Windows via PowerShell
-// Outlook COM automation. Falls back to a stub if Outlook
-// is not installed.
+// Calendar Manager (v2 — Pure Local)
+// Manages island-specific events stored in a local JSON file.
 // ============================================================
 
-const { execFile } = require('child_process');
-
-// Poll every 60 seconds (calendar events don't change rapidly)
-const POLL_INTERVAL = 60000;
-
-// PowerShell script to fetch upcoming events from Outlook
-// Uses the Outlook COM object to read the default calendar folder
-const CALENDAR_QUERY_SCRIPT = `
-try {
-  $outlook = New-Object -ComObject Outlook.Application
-  $namespace = $outlook.GetNamespace("MAPI")
-  $calFolder = $namespace.GetDefaultFolder(9) # olFolderCalendar
-  $now = Get-Date
-  $endTime = $now.AddHours(24)
-  $filter = "[Start] >= '" + $now.ToString("g") + "' AND [Start] <= '" + $endTime.ToString("g") + "'"
-  $items = $calFolder.Items
-  $items.Sort("[Start]")
-  $items.IncludeRecurrences = $true
-  $filtered = $items.Restrict($filter)
-
-  $events = @()
-  foreach ($item in $filtered) {
-    $events += @{
-      title = [string]$item.Subject
-      start = $item.Start.ToString("o")
-      end = $item.End.ToString("o")
-      location = [string]$item.Location
-      isAllDay = [bool]$item.AllDayEvent
-    }
-    if ($events.Count -ge 5) { break }
-  }
-
-  @{ status = "ok"; events = $events } | ConvertTo-Json -Compress -Depth 3
-} catch {
-  @{ status = "unavailable"; events = @() } | ConvertTo-Json -Compress
-}
-`;
+const { app } = require('electron');
+const fs = require('fs');
+const path = require('path');
 
 class CalendarManager {
   constructor() {
+    this.userDataPath = app.getPath('userData');
+    this.eventsPath = path.join(this.userDataPath, 'island_events.json');
     this.events = [];
     this.pollTimer = null;
     this.callback = null;
+
+    // Ensure the events file exists
+    this._ensureEventsFile();
+    this._loadEvents();
   }
 
   // ----------------------------------------------------------
-  // Start polling for calendar events
+  // Initialization & Loading
+  // ----------------------------------------------------------
+  _ensureEventsFile() {
+    if (!fs.existsSync(this.eventsPath)) {
+      const initialData = [
+        {
+          id: 'welcome-1',
+          title: 'Welcome to WinIsland!',
+          start: new Date().toISOString(),
+          end: new Date(Date.now() + 3600000).toISOString(),
+          location: 'Your Desktop',
+          isAllDay: false
+        }
+      ];
+      try {
+        fs.writeFileSync(this.eventsPath, JSON.stringify(initialData, null, 2), 'utf8');
+      } catch (err) {
+        console.error('Failed to create island_events.json:', err);
+      }
+    }
+  }
+
+  _loadEvents() {
+    try {
+      const data = fs.readFileSync(this.eventsPath, 'utf8');
+      this.events = JSON.parse(data);
+    } catch (err) {
+      console.error('Failed to load island_events.json:', err);
+      this.events = [];
+    }
+  }
+
+  // ----------------------------------------------------------
+  // Public API
   // ----------------------------------------------------------
   startPolling(callback) {
     this.callback = callback;
-
+    
     const poll = () => {
-      this._fetchEvents()
-        .then((result) => {
-          if (result.status === 'ok') {
-            this.events = result.events || [];
-          } else {
-            this.events = [];
-          }
-          if (this.callback) this.callback(this.events);
-        })
-        .catch(() => {
-          // Outlook not available or other error — silently degrade
-          this.events = [];
-          if (this.callback) this.callback(this.events);
-        });
+      this._loadEvents();
+      if (this.callback) this.callback(this.events);
     };
 
-    // Initial fetch
+    // Initial load
     poll();
-    this.pollTimer = setInterval(poll, POLL_INTERVAL);
+    // Refresh every 5 minutes (local file doesn't change on its own unless user edits)
+    this.pollTimer = setInterval(poll, 300000); 
   }
 
   stopPolling() {
@@ -89,25 +81,22 @@ class CalendarManager {
     return this.events;
   }
 
-  // ----------------------------------------------------------
-  // Internal: run PowerShell script to fetch events
-  // ----------------------------------------------------------
-  _fetchEvents() {
-    return new Promise((resolve, reject) => {
-      execFile(
-        'powershell.exe',
-        ['-NoProfile', '-NonInteractive', '-Command', CALENDAR_QUERY_SCRIPT],
-        { timeout: 10000 },
-        (err, stdout) => {
-          if (err) return reject(err);
-          try {
-            resolve(JSON.parse(stdout.trim()));
-          } catch (e) {
-            reject(e);
-          }
-        }
-      );
+  // Add/Remove events (for future UI expansion)
+  async saveEvent(event) {
+    this.events.push({
+      id: Date.now().toString(),
+      ...event
     });
+    this._persist();
+    if (this.callback) this.callback(this.events);
+  }
+
+  _persist() {
+    try {
+      fs.writeFileSync(this.eventsPath, JSON.stringify(this.events, null, 2), 'utf8');
+    } catch (err) {
+      console.error('Failed to save island_events.json:', err);
+    }
   }
 }
 
