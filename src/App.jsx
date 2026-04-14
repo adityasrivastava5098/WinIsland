@@ -14,6 +14,7 @@ function App() {
   const [calendarEvents, setCalendarEvents] = useState([]);
   const [mode, setMode] = useState('music'); // 'music' | 'calendar'
   const [accentColor, setAccentColor] = useState('#ffffff');
+  const [displayMode, setDisplayMode] = useState('pill'); // 'pill' | 'attached'
 
   // Cache artwork so we don't lose it when receiving '__same__' sentinel
   const cachedArtworkRef = useRef(null);
@@ -84,6 +85,21 @@ function App() {
   }, []);
 
   // ----------------------------------------------------------
+  // Subscribe to display mode changes
+  // ----------------------------------------------------------
+  useEffect(() => {
+    window.electronAPI?.getDisplayMode().then((mode) => {
+      if (mode) setDisplayMode(mode);
+    });
+
+    const unsub = window.electronAPI?.onDisplayModeChanged((mode) => {
+      setDisplayMode(mode);
+    });
+
+    return () => unsub?.();
+  }, []);
+
+  // ----------------------------------------------------------
   // Media control handlers (forwarded to main process via IPC)
   // ----------------------------------------------------------
   const handlePlayPause = useCallback(() => {
@@ -130,6 +146,7 @@ function App() {
   return (
     <DynamicIsland
       mode={mode}
+      displayMode={displayMode}
       mediaState={mediaState}
       calendarEvents={calendarEvents}
       accentColor={accentColor}

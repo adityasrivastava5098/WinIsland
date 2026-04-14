@@ -45,9 +45,12 @@ function bootstrap() {
   });
 
   calendarManager = new CalendarManager();
-  calendarManager.startPolling((events) => {
-    monitorManager.broadcastToAll('calendar-update', events);
-  });
+  
+  if (configManager.get('enableCalendarIntegration', false)) {
+    calendarManager.startPolling((events) => {
+      monitorManager.broadcastToAll('calendar-update', events);
+    });
+  }
 
   // 4. System tray
   trayManager = new TrayManager(app, monitorManager);
@@ -113,6 +116,23 @@ ipcMain.handle('test-startup', () => {
   return { success: true };
 });
 
+ipcMain.handle('get-calendar-status', () => {
+  return configManager.get('enableCalendarIntegration', false);
+});
+
+ipcMain.handle('toggle-calendar-integration', (_event, enabled) => {
+  configManager.set('enableCalendarIntegration', enabled);
+  if (enabled) {
+    calendarManager.startPolling((events) => {
+      monitorManager.broadcastToAll('calendar-update', events);
+    });
+  } else {
+    calendarManager.stopPolling();
+    // Also clear existing events on frontend
+    monitorManager.broadcastToAll('calendar-update', []);
+  }
+});
+
 // Media/Calendar Handlers (Keep existing)
 ipcMain.handle('media-play-pause', () => mediaManager?.sendCommand('play-pause'));
 ipcMain.handle('media-next', () => mediaManager?.sendCommand('next'));
@@ -120,6 +140,13 @@ ipcMain.handle('media-previous', () => mediaManager?.sendCommand('previous'));
 ipcMain.handle('get-media-state', () => mediaManager?.getCurrentState() || null);
 ipcMain.handle('media-seek', (_event, pos) => mediaManager?.seekTo(pos));
 ipcMain.handle('get-calendar-events', () => calendarManager?.getEvents() || []);
+
+// Display Mode Handlers
+ipcMain.handle('get-display-mode', () => monitorManager?.getDisplayMode() || 'pill');
+ipcMain.handle('set-display-mode', (_event, mode) => {
+  monitorManager?.setDisplayMode(mode);
+  return mode;
+});
 
 ipcMain.on('set-ignore-mouse-events', (event, ignore, options) => {
   const win = BrowserWindow.fromWebContents(event.sender);

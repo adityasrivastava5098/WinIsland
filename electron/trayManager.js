@@ -63,6 +63,30 @@ class TrayManager {
       },
       { type: 'separator' },
       {
+        label: 'Display Mode',
+        submenu: [
+          {
+            label: 'Pill (Floating)',
+            type: 'radio',
+            checked: configManager.get('displayMode', 'pill') === 'pill',
+            click: () => {
+              this.monitorManager.setDisplayMode('pill');
+              this._buildContextMenu();
+            },
+          },
+          {
+            label: 'Attached (Top Edge)',
+            type: 'radio',
+            checked: configManager.get('displayMode', 'pill') === 'attached',
+            click: () => {
+              this.monitorManager.setDisplayMode('attached');
+              this._buildContextMenu();
+            },
+          },
+        ],
+      },
+      { type: 'separator' },
+      {
         label: 'Start with Windows',
         type: 'checkbox',
         checked: configManager.get('runAtStartup', false),

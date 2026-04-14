@@ -4,7 +4,7 @@
   "description": "Dynamic Island for Windows — a sleek always-on-top overlay with media controls and calendar integration",
   "main": "electron/main.js",
   "scripts": {
-    "dev": "concurrently \"vite\" \"wait-on http://localhost:5173 && electron .\"",
+    "dev": "concurrently \"vite\" \"wait-on http://localhost:9090 && electron .\"",
     "build": "vite build",
     "dist": "npm run build && electron-builder",
     "postinstall": "electron-builder install-app-deps",
