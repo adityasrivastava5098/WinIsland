@@ -34,7 +34,9 @@ class ConfigManager {
       ports: { devServer: 9090 }, 
       runAtStartup: false, 
       startMinimized: true, 
-      startupDelaySeconds: 2 
+      startupDelaySeconds: 2,
+      displayMode: 'pill', // 'pill' | 'attached'
+      enableCalendarIntegration: false
     };
 
     // Try to load base config first (defaults)

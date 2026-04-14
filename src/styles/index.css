@@ -47,6 +47,17 @@ body,
   padding-top: 4px;
   width: 100%;
   height: 100%;
+  transition: padding-top 0.3s ease;
+}
+
+/* Pill mode — floating with margin */
+.island-container--pill {
+  padding-top: 4px;
+}
+
+/* Attached mode — flush with top */
+.island-container--attached {
+  padding-top: 0;
 }
 
 /* =============================================================
@@ -59,10 +70,22 @@ body,
   display: flex;
   align-items: center;
   justify-content: center;
+  will-change: width, height, border-radius;
+  transition: box-shadow 0.4s ease;
+}
+
+/* Pill mode shadows */
+.island--pill {
   box-shadow:
     0 2px 16px rgba(0, 0, 0, 0.6),
     0 0 1px rgba(255, 255, 255, 0.05);
-  will-change: width, height, border-radius;
+}
+
+/* Attached mode — bottom shadow only, subtle bottom edge glow */
+.island--attached {
+  box-shadow:
+    0 4px 20px rgba(0, 0, 0, 0.5),
+    0 1px 0 rgba(255, 255, 255, 0.04) inset;
 }
 
 /* Outer glow — uses CSS custom property set by React */
@@ -77,6 +100,16 @@ body,
     0 0 40px var(--glow-color, transparent);
   opacity: 0.4;
   transition: box-shadow 0.8s ease, opacity 0.8s ease;
+}
+
+/* In attached mode, glow only on bottom */
+.island--attached .island-glow {
+  inset: auto -2px -2px -2px;
+  height: 12px;
+  box-shadow:
+    0 4px 15px var(--glow-color, transparent),
+    0 8px 40px var(--glow-color, transparent);
+  opacity: 0.5;
 }
 
 /* =============================================================
@@ -739,4 +772,65 @@ input:checked + .slider:before {
 input:disabled + .slider {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+/* =============================================================
+   Settings — Display Mode Selector
+   ============================================================= */
+.settings-section-label {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 4px;
+}
+
+.display-mode-selector {
+  display: flex;
+  gap: 8px;
+}
+
+.display-mode-btn {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 6px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1.5px solid rgba(255, 255, 255, 0.08);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.25s ease;
+}
+
+.display-mode-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.15);
+}
+
+.display-mode-btn--active {
+  background: rgba(99, 102, 241, 0.15);
+  border-color: rgba(99, 102, 241, 0.5);
+  color: #a5b4fc;
+}
+
+.display-mode-btn--active:hover {
+  background: rgba(99, 102, 241, 0.2);
+  border-color: rgba(99, 102, 241, 0.6);
+}
+
+.display-mode-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 16px;
+}
+
+.display-mode-label {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
 }

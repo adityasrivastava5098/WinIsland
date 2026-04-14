@@ -16,6 +16,7 @@ const SPRING = { type: 'spring', stiffness: 380, damping: 28 };
 
 function DynamicIsland({
   mode,
+  displayMode = 'pill',
   mediaState,
   calendarEvents,
   accentColor,
@@ -97,13 +98,24 @@ function DynamicIsland({
   // ----------------------------------------------------------
   // Dimensions and Mouse Interaction
   // ----------------------------------------------------------
+  const isAttached = displayMode === 'attached';
+
   const dimensions = useMemo(() => {
     if (isExpanded) {
-      return { width: 360, height: 200, borderRadius: 32 };
+      return {
+        width: 360,
+        height: 200,
+        borderRadius: isAttached ? '0px 0px 32px 32px' : '32px',
+      };
     }
     // Collapsed: show 160px pill if media active, or 40px circle if idle
-    return { width: shouldShowMedia ? 160 : 40, height: 40, borderRadius: 20 };
-  }, [isExpanded, shouldShowMedia]);
+    const w = shouldShowMedia ? 160 : 40;
+    return {
+      width: w,
+      height: 40,
+      borderRadius: isAttached ? '0px 0px 20px 20px' : '20px',
+    };
+  }, [isExpanded, shouldShowMedia, isAttached]);
 
   useEffect(() => {
     if (isExpanded) {
@@ -201,10 +213,10 @@ function DynamicIsland({
   };
 
   return (
-    <div className="island-container">
+    <div className={`island-container ${isAttached ? 'island-container--attached' : 'island-container--pill'}`}>
       <motion.div
         ref={islandRef}
-        className={`island ${isExpanded ? 'expanded' : 'collapsed'}`}
+        className={`island ${isExpanded ? 'expanded' : 'collapsed'} ${isAttached ? 'island--attached' : 'island--pill'}`}
         layout
         animate={{
           width: dimensions.width,

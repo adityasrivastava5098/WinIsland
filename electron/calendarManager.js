@@ -54,6 +54,7 @@ class CalendarManager {
   // Start polling for calendar events
   // ----------------------------------------------------------
   startPolling(callback) {
+    this.stopPolling();
     this.callback = callback;
 
     const poll = () => {

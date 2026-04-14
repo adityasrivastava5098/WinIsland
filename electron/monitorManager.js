@@ -11,6 +11,7 @@ const configManager = require('./configManager');
 
 const ISLAND_WIDTH = 380;
 const ISLAND_HEIGHT = 220;
+const PILL_TOP_MARGIN = 4; // px gap from top in pill mode
 
 // How often to check that all windows are alive and visible (ms)
 const WATCHDOG_INTERVAL = 3000;
@@ -20,6 +21,22 @@ class MonitorManager {
     this.isDev = isDev;
     this.windows = new Map(); // displayId → { win, isLoaded }
     this._watchdogTimer = null;
+    this.displayMode = configManager.get('displayMode', 'pill'); // 'pill' | 'attached'
+  }
+
+  // ----------------------------------------------------------
+  // Get / Set display mode and reposition all windows
+  // ----------------------------------------------------------
+  getDisplayMode() {
+    return this.displayMode;
+  }
+
+  setDisplayMode(mode) {
+    if (mode !== 'pill' && mode !== 'attached') return;
+    this.displayMode = mode;
+    configManager.set('displayMode', mode);
+    this.repositionAll();
+    this.broadcastToAll('display-mode-changed', mode);
   }
 
   // ----------------------------------------------------------
@@ -224,6 +241,15 @@ class MonitorManager {
   // Calculate the centered-top position for a given display
   // ----------------------------------------------------------
   _calcPosition(display) {
+    if (this.displayMode === 'attached') {
+      // Attached: flush to the absolute top of the display (bounds, not workArea)
+      const { x, y, width } = display.bounds;
+      return {
+        x: Math.round(x + (width - ISLAND_WIDTH) / 2),
+        y: y,
+      };
+    }
+    // Pill: use workArea with a small top margin
     const { x, y, width } = display.workArea;
     return {
       x: Math.round(x + (width - ISLAND_WIDTH) / 2),

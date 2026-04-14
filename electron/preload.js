@@ -37,4 +37,17 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getStartupStatus: () => ipcRenderer.invoke('get-startup-status'),
   toggleStartup: (enabled) => ipcRenderer.invoke('toggle-startup', enabled),
   testStartup: () => ipcRenderer.invoke('test-startup'),
+
+  // ---- Calendar Settings ----
+  getCalendarStatus: () => ipcRenderer.invoke('get-calendar-status'),
+  toggleCalendarIntegration: (enabled) => ipcRenderer.invoke('toggle-calendar-integration', enabled),
+
+  // ---- Display Mode ----
+  getDisplayMode: () => ipcRenderer.invoke('get-display-mode'),
+  setDisplayMode: (mode) => ipcRenderer.invoke('set-display-mode', mode),
+  onDisplayModeChanged: (callback) => {
+    const handler = (_event, mode) => callback(mode);
+    ipcRenderer.on('display-mode-changed', handler);
+    return () => ipcRenderer.removeListener('display-mode-changed', handler);
+  },
 });
