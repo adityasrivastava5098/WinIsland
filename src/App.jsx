@@ -12,7 +12,8 @@ import { extractDominantColor } from './utils/colorExtractor';
 function App() {
   const [mediaState, setMediaState] = useState(null);
   const [calendarEvents, setCalendarEvents] = useState([]);
-  const [mode, setMode] = useState('music'); // 'music' | 'calendar'
+  const [privacyState, setPrivacyState] = useState({ camera: [], microphone: [] });
+  const [mode, setMode] = useState('music'); // 'music' | 'calendar' | 'privacy'
   const [accentColor, setAccentColor] = useState('#ffffff');
   const [displayMode, setDisplayMode] = useState('pill'); // 'pill' | 'attached'
 
@@ -85,6 +86,21 @@ function App() {
   }, []);
 
   // ----------------------------------------------------------
+  // Subscribe to privacy state updates
+  // ----------------------------------------------------------
+  useEffect(() => {
+    window.electronAPI?.getPrivacyState().then((state) => {
+      if (state) setPrivacyState(state);
+    });
+
+    const unsub = window.electronAPI?.onPrivacyUpdate((state) => {
+      setPrivacyState(state || { camera: [], microphone: [] });
+    });
+
+    return () => unsub?.();
+  }, []);
+
+  // ----------------------------------------------------------
   // Subscribe to display mode changes
   // ----------------------------------------------------------
   useEffect(() => {
@@ -143,12 +159,17 @@ function App() {
     });
   }, []);
 
+  const handleSetMode = useCallback((newMode) => {
+    setMode(newMode);
+  }, []);
+
   return (
     <DynamicIsland
       mode={mode}
       displayMode={displayMode}
       mediaState={mediaState}
       calendarEvents={calendarEvents}
+      privacyState={privacyState}
       accentColor={accentColor}
       onPlayPause={handlePlayPause}
       onNext={handleNext}
@@ -156,6 +177,7 @@ function App() {
       onSeek={handleSeek}
       onOpenSource={handleOpenSource}
       onToggleMode={toggleMode}
+      onSetMode={handleSetMode}
       onExpandRefresh={handleExpandRefresh}
     />
   );
