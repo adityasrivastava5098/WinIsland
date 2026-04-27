@@ -42,6 +42,17 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getCalendarStatus: () => ipcRenderer.invoke('get-calendar-status'),
   toggleCalendarIntegration: (enabled) => ipcRenderer.invoke('toggle-calendar-integration', enabled),
 
+  // ---- Privacy Settings ----
+  getPrivacyStatus: () => ipcRenderer.invoke('get-privacy-status'),
+  togglePrivacyIndicators: (enabled) => ipcRenderer.invoke('toggle-privacy-indicators', enabled),
+  getPrivacyState: () => ipcRenderer.invoke('get-privacy-state'),
+
+  onPrivacyUpdate: (callback) => {
+    const handler = (_event, data) => callback(data);
+    ipcRenderer.on('privacy-update', handler);
+    return () => ipcRenderer.removeListener('privacy-update', handler);
+  },
+
   // ---- Display Mode ----
   getDisplayMode: () => ipcRenderer.invoke('get-display-mode'),
   setDisplayMode: (mode) => ipcRenderer.invoke('set-display-mode', mode),

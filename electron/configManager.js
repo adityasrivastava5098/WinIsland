@@ -36,7 +36,8 @@ class ConfigManager {
       startMinimized: true, 
       startupDelaySeconds: 2,
       displayMode: 'pill', // 'pill' | 'attached'
-      enableCalendarIntegration: false
+      enableCalendarIntegration: false,
+      enablePrivacyIndicators: true
     };
 
     // Try to load base config first (defaults)

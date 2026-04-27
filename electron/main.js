@@ -10,6 +10,7 @@ const MediaManager = require('./mediaManager');
 const CalendarManager = require('./calendarManager');
 const TrayManager = require('./trayManager');
 const startupManager = require('./startupManager');
+const PrivacyManager = require('./privacyManager');
 
 // Single Instance Lock
 const gotLock = app.requestSingleInstanceLock();
@@ -25,6 +26,7 @@ let monitorManager = null;
 let mediaManager = null;
 let calendarManager = null;
 let trayManager = null;
+let privacyManager = null;
 
 // Parse CLI Flags
 const isStartMinimized = process.argv.includes('--start-minimized');
@@ -51,6 +53,12 @@ function bootstrap() {
       monitorManager.broadcastToAll('calendar-update', events);
     });
   }
+
+  privacyManager = new PrivacyManager();
+  privacyManager.setEnabled(configManager.get('enablePrivacyIndicators', true));
+  privacyManager.startPolling((privacyState) => {
+    monitorManager.broadcastToAll('privacy-update', privacyState);
+  });
 
   // 4. System tray
   trayManager = new TrayManager(app, monitorManager);
@@ -133,6 +141,19 @@ ipcMain.handle('toggle-calendar-integration', (_event, enabled) => {
   }
 });
 
+ipcMain.handle('get-privacy-status', () => {
+  return configManager.get('enablePrivacyIndicators', true);
+});
+
+ipcMain.handle('toggle-privacy-indicators', (_event, enabled) => {
+  configManager.set('enablePrivacyIndicators', enabled);
+  privacyManager?.setEnabled(enabled);
+});
+
+ipcMain.handle('get-privacy-state', () => {
+  return privacyManager?.getCurrentState() || { camera: [], microphone: [] };
+});
+
 // Media/Calendar Handlers (Keep existing)
 ipcMain.handle('media-play-pause', () => mediaManager?.sendCommand('play-pause'));
 ipcMain.handle('media-next', () => mediaManager?.sendCommand('next'));
@@ -160,4 +181,5 @@ app.on('window-all-closed', () => {
 app.on('before-quit', () => {
   mediaManager?.stopPolling();
   calendarManager?.stopPolling();
+  privacyManager?.stopPolling();
 });

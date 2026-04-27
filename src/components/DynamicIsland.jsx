@@ -10,6 +10,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import MusicWidget from './MusicWidget';
 import CalendarWidget from './CalendarWidget';
 import SettingsWidget from './SettingsWidget';
+import PrivacyWidget from './PrivacyWidget';
 import SoundWave from './SoundWave';
 
 const SPRING = { type: 'spring', stiffness: 380, damping: 28 };
@@ -19,6 +20,7 @@ function DynamicIsland({
   displayMode = 'pill',
   mediaState,
   calendarEvents,
+  privacyState,
   accentColor,
   onPlayPause,
   onNext,
@@ -26,6 +28,7 @@ function DynamicIsland({
   onSeek,
   onOpenSource,
   onToggleMode,
+  onSetMode,
   onExpandRefresh,
 }) {
   const [isExpanded, setIsExpanded] = useState(false);
@@ -193,6 +196,7 @@ function DynamicIsland({
               </motion.div>
             )}
           </AnimatePresence>
+
         </motion.div>
       );
     }
@@ -205,18 +209,59 @@ function DynamicIsland({
         initial={{ opacity: 0, scale: 0.8 }}
         animate={{ opacity: 1, scale: 1 }}
         exit={{ opacity: 0, scale: 0.8 }}
-        style={{ width: '40px', justifyContent: 'center', padding: 0 }}
+        style={{ width: '40px', justifyContent: 'center', padding: 0, position: 'relative' }}
       >
         <div className="island-idle-dot" />
+
+      </motion.div>
+    );
+  };
+
+  const hasCamera = privacyState?.camera?.length > 0;
+  const hasMic = privacyState?.microphone?.length > 0;
+
+  const renderIndicator = (type, color) => {
+    return (
+      <motion.div
+        key={`indicator-${type}`}
+        layout
+        initial={{ opacity: 0, scale: 0.8 }}
+        animate={{ opacity: 1, scale: 1 }}
+        exit={{ opacity: 0, scale: 0.8 }}
+        style={{
+          width: '28px',
+          height: '28px',
+          borderRadius: '50%',
+          backgroundColor: '#000000',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          cursor: 'pointer',
+          boxShadow: isAttached ? '0 4px 12px rgba(0,0,0,0.5)' : '0 2px 8px rgba(0,0,0,0.6)',
+          zIndex: 10,
+          marginTop: isAttached ? '6px' : '6px', // Align roughly with the center of the 40px island
+        }}
+        onClick={(e) => {
+          e.stopPropagation();
+          onSetMode(`privacy-${type}`);
+          if (!isExpanded) {
+            onExpandRefresh?.();
+            setExpandSignal((n) => n + 1);
+            setIsExpanded(true);
+          }
+        }}
+      >
+        <div style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: color, boxShadow: `0 0 6px ${color}` }} />
       </motion.div>
     );
   };
 
   return (
     <div className={`island-container ${isAttached ? 'island-container--attached' : 'island-container--pill'}`}>
-      <motion.div
-        ref={islandRef}
-        className={`island ${isExpanded ? 'expanded' : 'collapsed'} ${isAttached ? 'island--attached' : 'island--pill'}`}
+      <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-start', justifyContent: 'center' }}>
+        <motion.div
+          ref={islandRef}
+          className={`island ${isExpanded ? 'expanded' : 'collapsed'} ${isAttached ? 'island--attached' : 'island--pill'}`}
         layout
         animate={{
           width: dimensions.width,
@@ -275,6 +320,8 @@ function DynamicIsland({
                 />
               ) : mode === 'calendar' ? (
                 <CalendarWidget events={calendarEvents} />
+              ) : mode.startsWith('privacy') ? (
+                <PrivacyWidget privacyState={privacyState} type={mode.split('-')[1] || 'all'} />
               ) : (
                 <SettingsWidget />
               )}
@@ -286,7 +333,7 @@ function DynamicIsland({
                   e.stopPropagation();
                   onToggleMode();
                 }}
-                title={mode === 'music' ? 'To Calendar' : mode === 'calendar' ? 'To Settings' : 'To Music'}
+                title={mode === 'music' ? 'To Calendar' : mode === 'calendar' ? 'To Settings' : mode.startsWith('privacy') ? 'Back to Music' : 'To Music'}
               >
                 {mode === 'music' ? (
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -299,6 +346,12 @@ function DynamicIsland({
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <circle cx="12" cy="12" r="3" />
                     <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
+                  </svg>
+                ) : mode.startsWith('privacy') ? (
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M9 18V5l12-2v13" />
+                    <circle cx="6" cy="18" r="3" />
+                    <circle cx="18" cy="16" r="3" />
                   </svg>
                 ) : (
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -314,6 +367,13 @@ function DynamicIsland({
           )}
         </AnimatePresence>
       </motion.div>
+
+        {/* Separate Privacy Indicators */}
+        <AnimatePresence>
+          {!isExpanded && hasCamera && renderIndicator('camera', '#34C759')}
+          {!isExpanded && hasMic && renderIndicator('microphone', '#FF9500')}
+        </AnimatePresence>
+      </div>
     </div>
   );
 }
