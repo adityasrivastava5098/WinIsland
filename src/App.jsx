@@ -16,6 +16,8 @@ function App() {
   const [mode, setMode] = useState('music'); // 'music' | 'calendar' | 'privacy'
   const [accentColor, setAccentColor] = useState('#ffffff');
   const [displayMode, setDisplayMode] = useState('pill'); // 'pill' | 'attached'
+  const [isCopied, setIsCopied] = useState(false);
+  const copiedTimeoutRef = useRef(null);
 
   // Cache artwork so we don't lose it when receiving '__same__' sentinel
   const cachedArtworkRef = useRef(null);
@@ -116,6 +118,24 @@ function App() {
   }, []);
 
   // ----------------------------------------------------------
+  // Subscribe to clipboard updates
+  // ----------------------------------------------------------
+  useEffect(() => {
+    const unsub = window.electronAPI?.onClipboardUpdate((data) => {
+      setIsCopied(true);
+      if (copiedTimeoutRef.current) clearTimeout(copiedTimeoutRef.current);
+      copiedTimeoutRef.current = setTimeout(() => {
+        setIsCopied(false);
+      }, 1500); // 1.5 seconds hold
+    });
+
+    return () => {
+      unsub?.();
+      if (copiedTimeoutRef.current) clearTimeout(copiedTimeoutRef.current);
+    };
+  }, []);
+
+  // ----------------------------------------------------------
   // Media control handlers (forwarded to main process via IPC)
   // ----------------------------------------------------------
   const handlePlayPause = useCallback(() => {
@@ -171,6 +191,7 @@ function App() {
       calendarEvents={calendarEvents}
       privacyState={privacyState}
       accentColor={accentColor}
+      isCopied={isCopied}
       onPlayPause={handlePlayPause}
       onNext={handleNext}
       onPrevious={handlePrevious}

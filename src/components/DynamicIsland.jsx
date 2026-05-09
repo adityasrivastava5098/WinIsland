@@ -30,6 +30,7 @@ function DynamicIsland({
   onToggleMode,
   onSetMode,
   onExpandRefresh,
+  isCopied,
 }) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [expandSignal, setExpandSignal] = useState(0);
@@ -111,6 +112,16 @@ function DynamicIsland({
         borderRadius: isAttached ? '0px 0px 32px 32px' : '32px',
       };
     }
+    
+    // If copied and not expanded, show 160px pill (expands from 40 if idle)
+    if (isCopied) {
+      return {
+        width: 160,
+        height: 40,
+        borderRadius: isAttached ? '0px 0px 20px 20px' : '20px',
+      };
+    }
+
     // Collapsed: show 160px pill if media active, or 40px circle if idle
     const w = shouldShowMedia ? 160 : 40;
     return {
@@ -118,7 +129,7 @@ function DynamicIsland({
       height: 40,
       borderRadius: isAttached ? '0px 0px 20px 20px' : '20px',
     };
-  }, [isExpanded, shouldShowMedia, isAttached]);
+  }, [isExpanded, shouldShowMedia, isAttached, isCopied]);
 
   useEffect(() => {
     if (isExpanded) {
@@ -134,6 +145,26 @@ function DynamicIsland({
   // Collapsed content
   // ----------------------------------------------------------
   const renderCollapsed = () => {
+    if (isCopied) {
+      return (
+        <motion.div
+          key="copied"
+          className="island-collapsed-content"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.2 }}
+          style={{ justifyContent: 'center', gap: '8px' }}
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+          </svg>
+          <span style={{ color: '#fff', fontSize: '13px', fontWeight: '600' }}>Copied</span>
+        </motion.div>
+      );
+    }
+
     if (shouldShowMedia) {
       return (
         <motion.div
