@@ -45,9 +45,12 @@ class ClipboardManager {
           this.lastText = clipboard.readText();
         }
         
+        const type = this._getType(currentFormats);
+        
         if (this.callback) {
           this.callback({
             formats: currentFormats,
+            type: type,
             timestamp: Date.now()
           });
         }
@@ -62,6 +65,22 @@ class ClipboardManager {
       clearInterval(this.pollTimer);
       this.pollTimer = null;
     }
+  }
+
+  _getType(formats) {
+    if (formats.includes('image/png') || formats.includes('image/jpeg')) {
+      return 'image';
+    }
+    if (formats.includes('text/uri-list')) {
+      return 'file';
+    }
+    if (formats.some(f => f.toLowerCase().includes('file'))) {
+      return 'file';
+    }
+    if (formats.includes('text/plain')) {
+      return 'text';
+    }
+    return 'generic';
   }
 }
 

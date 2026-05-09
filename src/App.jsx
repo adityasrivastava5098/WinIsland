@@ -17,6 +17,7 @@ function App() {
   const [accentColor, setAccentColor] = useState('#ffffff');
   const [displayMode, setDisplayMode] = useState('pill'); // 'pill' | 'attached'
   const [isCopied, setIsCopied] = useState(false);
+  const [clipboardType, setClipboardType] = useState('generic');
   const copiedTimeoutRef = useRef(null);
 
   // Cache artwork so we don't lose it when receiving '__same__' sentinel
@@ -122,6 +123,7 @@ function App() {
   // ----------------------------------------------------------
   useEffect(() => {
     const unsub = window.electronAPI?.onClipboardUpdate((data) => {
+      setClipboardType(data.type || 'generic');
       setIsCopied(true);
       if (copiedTimeoutRef.current) clearTimeout(copiedTimeoutRef.current);
       copiedTimeoutRef.current = setTimeout(() => {
@@ -192,6 +194,7 @@ function App() {
       privacyState={privacyState}
       accentColor={accentColor}
       isCopied={isCopied}
+      clipboardType={clipboardType}
       onPlayPause={handlePlayPause}
       onNext={handleNext}
       onPrevious={handlePrevious}
