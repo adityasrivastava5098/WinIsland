@@ -11,6 +11,7 @@ const CalendarManager = require('./calendarManager');
 const TrayManager = require('./trayManager');
 const startupManager = require('./startupManager');
 const PrivacyManager = require('./privacyManager');
+const ClipboardManager = require('./clipboardManager');
 
 // Single Instance Lock
 const gotLock = app.requestSingleInstanceLock();
@@ -27,6 +28,7 @@ let mediaManager = null;
 let calendarManager = null;
 let trayManager = null;
 let privacyManager = null;
+let clipboardManager = null;
 
 // Parse CLI Flags
 const isStartMinimized = process.argv.includes('--start-minimized');
@@ -58,6 +60,11 @@ function bootstrap() {
   privacyManager.setEnabled(configManager.get('enablePrivacyIndicators', true));
   privacyManager.startPolling((privacyState) => {
     monitorManager.broadcastToAll('privacy-update', privacyState);
+  });
+
+  clipboardManager = new ClipboardManager();
+  clipboardManager.startPolling((clipboardState) => {
+    monitorManager.broadcastToAll('clipboard-update', clipboardState);
   });
 
   // 4. System tray
@@ -182,4 +189,5 @@ app.on('before-quit', () => {
   mediaManager?.stopPolling();
   calendarManager?.stopPolling();
   privacyManager?.stopPolling();
+  clipboardManager?.stopPolling();
 });

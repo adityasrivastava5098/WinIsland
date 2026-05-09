@@ -30,6 +30,8 @@ function DynamicIsland({
   onToggleMode,
   onSetMode,
   onExpandRefresh,
+  isCopied,
+  clipboardType = 'generic',
 }) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [expandSignal, setExpandSignal] = useState(0);
@@ -111,6 +113,16 @@ function DynamicIsland({
         borderRadius: isAttached ? '0px 0px 32px 32px' : '32px',
       };
     }
+    
+    // If copied and not expanded, show 160px pill (expands from 40 if idle)
+    if (isCopied) {
+      return {
+        width: 160,
+        height: 40,
+        borderRadius: isAttached ? '0px 0px 20px 20px' : '20px',
+      };
+    }
+
     // Collapsed: show 160px pill if media active, or 40px circle if idle
     const w = shouldShowMedia ? 160 : 40;
     return {
@@ -118,7 +130,7 @@ function DynamicIsland({
       height: 40,
       borderRadius: isAttached ? '0px 0px 20px 20px' : '20px',
     };
-  }, [isExpanded, shouldShowMedia, isAttached]);
+  }, [isExpanded, shouldShowMedia, isAttached, isCopied]);
 
   useEffect(() => {
     if (isExpanded) {
@@ -134,6 +146,73 @@ function DynamicIsland({
   // Collapsed content
   // ----------------------------------------------------------
   const renderCollapsed = () => {
+    if (isCopied) {
+      let icon = null;
+      let subtitle = "Content copied";
+      
+      switch (clipboardType) {
+        case 'text':
+          icon = (
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+              <polyline points="14 2 14 8 20 8"></polyline>
+              <line x1="16" y1="13" x2="8" y2="13"></line>
+              <line x1="16" y1="17" x2="8" y2="17"></line>
+              <polyline points="10 9 9 9 8 9"></polyline>
+            </svg>
+          );
+          subtitle = "Text copied";
+          break;
+        case 'file':
+          icon = (
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+            </svg>
+          );
+          subtitle = "File copied";
+          break;
+        case 'image':
+          icon = (
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+              <circle cx="8.5" cy="8.5" r="1.5"></circle>
+              <polyline points="21 15 16 10 5 21"></polyline>
+            </svg>
+          );
+          subtitle = "Image copied";
+          break;
+        default:
+          icon = (
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+              <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+            </svg>
+          );
+          subtitle = "Copied";
+      }
+
+      return (
+        <motion.div
+          key="copied"
+          className="island-collapsed-content"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.2 }}
+          style={{ justifyContent: 'flex-start', paddingLeft: '10px' }}
+        >
+          <div className="island-thumb-circle" style={{ background: 'rgba(255,255,255,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginRight: '8px' }}>
+            {icon}
+          </div>
+
+          <div className="island-pill-info" style={{ pointerEvents: 'none' }}>
+            <span className="pill-title">Copied</span>
+            <span className="pill-artist">{subtitle}</span>
+          </div>
+        </motion.div>
+      );
+    }
+
     if (shouldShowMedia) {
       return (
         <motion.div
