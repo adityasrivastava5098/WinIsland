@@ -62,6 +62,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
     return () => ipcRenderer.removeListener('display-mode-changed', handler);
   },
 
+  // ---- Volume ----
+  getVolume: () => ipcRenderer.invoke('get-volume'),
+  setVolume: (level) => ipcRenderer.invoke('set-volume', level),
+
   // ---- Clipboard ----
   onClipboardUpdate: (callback) => {
     const handler = (_event, data) => callback(data);

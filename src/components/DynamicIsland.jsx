@@ -37,6 +37,9 @@ function DynamicIsland({
   const [expandSignal, setExpandSignal] = useState(0);
   const [shouldShowMedia, setShouldShowMedia] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
+  const [volume, setVolume] = useState(50);
+  const [showVolume, setShowVolume] = useState(false);
+  const volumeTimeoutRef = useRef(null);
   const islandRef = useRef(null);
   const lingerTimerRef = useRef(null);
 
@@ -114,6 +117,15 @@ function DynamicIsland({
       };
     }
     
+    // If scrolling volume, show 200px pill
+    if (showVolume) {
+      return {
+        width: 200,
+        height: 40,
+        borderRadius: isAttached ? '0px 0px 20px 20px' : '20px',
+      };
+    }
+    
     // If copied and not expanded, show 160px pill (expands from 40 if idle)
     if (isCopied) {
       return {
@@ -122,7 +134,7 @@ function DynamicIsland({
         borderRadius: isAttached ? '0px 0px 20px 20px' : '20px',
       };
     }
-
+    
     // Collapsed: show 160px pill if media active, or 40px circle if idle
     const w = shouldShowMedia ? 160 : 40;
     return {
@@ -130,7 +142,7 @@ function DynamicIsland({
       height: 40,
       borderRadius: isAttached ? '0px 0px 20px 20px' : '20px',
     };
-  }, [isExpanded, shouldShowMedia, isAttached, isCopied]);
+  }, [isExpanded, shouldShowMedia, isAttached, isCopied, showVolume]);
 
   useEffect(() => {
     if (isExpanded) {
@@ -146,6 +158,66 @@ function DynamicIsland({
   // Collapsed content
   // ----------------------------------------------------------
   const renderCollapsed = () => {
+    if (showVolume) {
+      let icon = null;
+      if (volume === 0) {
+        icon = (
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+            <line x1="23" y1="9" x2="17" y2="15"></line>
+            <line x1="17" y1="9" x2="23" y2="15"></line>
+          </svg>
+        );
+      } else if (volume < 33) {
+        icon = (
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+          </svg>
+        );
+      } else if (volume < 66) {
+        icon = (
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+            <path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+          </svg>
+        );
+      } else {
+        icon = (
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+            <path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+            <path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path>
+          </svg>
+        );
+      }
+
+      return (
+        <motion.div
+          key="volume"
+          className="island-collapsed-content"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.2 }}
+          style={{ justifyContent: 'flex-start', paddingLeft: '10px' }}
+        >
+          <div className="island-thumb-circle" style={{ background: 'rgba(255,255,255,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginRight: '8px' }}>
+            {icon}
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', flex: 1, marginRight: '10px', pointerEvents: 'none' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2px' }}>
+              <span style={{ color: '#fff', fontSize: '11px', fontWeight: '600' }}>Volume</span>
+              <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: '11px' }}>{Math.round(volume)}%</span>
+            </div>
+            <div style={{ width: '100%', height: '4px', background: 'rgba(255,255,255,0.15)', borderRadius: '2px', overflow: 'hidden' }}>
+              <div style={{ width: `${volume}%`, height: '100%', background: '#fff', borderRadius: '2px' }} />
+            </div>
+          </div>
+        </motion.div>
+      );
+    }
+
     if (isCopied) {
       let icon = null;
       let subtitle = "Content copied";
@@ -335,6 +407,23 @@ function DynamicIsland({
     );
   };
 
+  const handleWheel = (e) => {
+    if (isExpanded) return;
+    
+    setShowVolume(true);
+    
+    setVolume((prev) => {
+      const next = Math.max(0, Math.min(100, prev + (e.deltaY < 0 ? 5 : -5)));
+      window.electronAPI?.setVolume(next);
+      return next;
+    });
+
+    if (volumeTimeoutRef.current) clearTimeout(volumeTimeoutRef.current);
+    volumeTimeoutRef.current = setTimeout(() => {
+      setShowVolume(false);
+    }, 1500); // 1.5 seconds hold
+  };
+
   return (
     <div className={`island-container ${isAttached ? 'island-container--attached' : 'island-container--pill'}`}>
       <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-start', justifyContent: 'center' }}>
@@ -342,6 +431,7 @@ function DynamicIsland({
           ref={islandRef}
           className={`island ${isExpanded ? 'expanded' : 'collapsed'} ${isAttached ? 'island--attached' : 'island--pill'}`}
         layout
+        onWheel={handleWheel}
         animate={{
           width: dimensions.width,
           height: dimensions.height,
@@ -360,6 +450,9 @@ function DynamicIsland({
         onMouseEnter={() => {
           setIsHovered(true);
           window.electronAPI?.setIgnoreMouseEvents(false);
+          window.electronAPI?.getVolume().then((vol) => {
+            if (vol !== undefined && vol >= 0) setVolume(vol);
+          });
         }}
         onMouseLeave={() => {
           setIsHovered(false);

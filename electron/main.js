@@ -9,9 +9,9 @@ const MonitorManager = require('./monitorManager');
 const MediaManager = require('./mediaManager');
 const CalendarManager = require('./calendarManager');
 const TrayManager = require('./trayManager');
-const startupManager = require('./startupManager');
 const PrivacyManager = require('./privacyManager');
 const ClipboardManager = require('./clipboardManager');
+const VolumeManager = require('./volumeManager');
 
 // Single Instance Lock
 const gotLock = app.requestSingleInstanceLock();
@@ -29,6 +29,7 @@ let calendarManager = null;
 let trayManager = null;
 let privacyManager = null;
 let clipboardManager = null;
+let volumeManager = null;
 
 // Parse CLI Flags
 const isStartMinimized = process.argv.includes('--start-minimized');
@@ -66,6 +67,8 @@ function bootstrap() {
   clipboardManager.startPolling((clipboardState) => {
     monitorManager.broadcastToAll('clipboard-update', clipboardState);
   });
+
+  volumeManager = new VolumeManager();
 
   // 4. System tray
   trayManager = new TrayManager(app, monitorManager);
@@ -176,6 +179,17 @@ ipcMain.handle('set-display-mode', (_event, mode) => {
   return mode;
 });
 
+ipcMain.handle('get-volume', () => {
+  return new Promise((resolve) => {
+    volumeManager?.getVolume((vol) => resolve(vol));
+  });
+});
+
+ipcMain.handle('set-volume', (_event, level) => {
+  volumeManager?.setVolume(level);
+  return { success: true };
+});
+
 ipcMain.on('set-ignore-mouse-events', (event, ignore, options) => {
   const win = BrowserWindow.fromWebContents(event.sender);
   win?.setIgnoreMouseEvents(ignore, options);
@@ -190,4 +204,5 @@ app.on('before-quit', () => {
   calendarManager?.stopPolling();
   privacyManager?.stopPolling();
   clipboardManager?.stopPolling();
+  volumeManager?.dispose();
 });
