@@ -65,6 +65,11 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // ---- Volume ----
   getVolume: () => ipcRenderer.invoke('get-volume'),
   setVolume: (level) => ipcRenderer.invoke('set-volume', level),
+  onVolumeUpdate: (callback) => {
+    const handler = (_event, data) => callback(data);
+    ipcRenderer.on('volume-update', handler);
+    return () => ipcRenderer.removeListener('volume-update', handler);
+  },
 
   // ---- Clipboard ----
   onClipboardUpdate: (callback) => {

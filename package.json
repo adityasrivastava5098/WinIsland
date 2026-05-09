@@ -20,7 +20,9 @@
   "license": "MIT",
   "type": "commonjs",
   "dependencies": {
+    "edge-js": "^26.0.0",
     "framer-motion": "^12.38.0",
+    "loudness": "^0.4.2",
     "react": "^19.2.4",
     "react-dom": "^19.2.4"
   },

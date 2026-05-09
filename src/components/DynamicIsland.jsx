@@ -47,6 +47,23 @@ function DynamicIsland({
   const hasMedia = mediaState && mediaState.status !== 'no_session';
 
   // ----------------------------------------------------------
+  // Sync System Volume
+  // ----------------------------------------------------------
+  useEffect(() => {
+    const unsub = window.electronAPI?.onVolumeUpdate?.((vol) => {
+      setVolume(vol);
+      if (!isExpanded) {
+        setShowVolume(true);
+        if (volumeTimeoutRef.current) clearTimeout(volumeTimeoutRef.current);
+        volumeTimeoutRef.current = setTimeout(() => {
+          setShowVolume(false);
+        }, 1500);
+      }
+    });
+    return () => unsub?.();
+  }, [isExpanded]);
+
+  // ----------------------------------------------------------
   // Linger logic: keep music pill for 1 min after playback stops/pauses
   // ----------------------------------------------------------
   useEffect(() => {
@@ -162,7 +179,7 @@ function DynamicIsland({
       let icon = null;
       if (volume === 0) {
         icon = (
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
             <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
             <line x1="23" y1="9" x2="17" y2="15"></line>
             <line x1="17" y1="9" x2="23" y2="15"></line>
@@ -170,23 +187,26 @@ function DynamicIsland({
         );
       } else if (volume < 33) {
         icon = (
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
             <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+            <path d="M15 9a5 5 0 0 1 0 6"></path>
           </svg>
         );
       } else if (volume < 66) {
         icon = (
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
             <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
-            <path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+            <path d="M15 9a5 5 0 0 1 0 6"></path>
+            <path d="M18 7a9 9 0 0 1 0 10"></path>
           </svg>
         );
       } else {
         icon = (
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
             <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
-            <path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
-            <path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path>
+            <path d="M15 9a5 5 0 0 1 0 6"></path>
+            <path d="M18 7a9 9 0 0 1 0 10"></path>
+            <path d="M21 5a13 13 0 0 1 0 14"></path>
           </svg>
         );
       }
@@ -201,17 +221,17 @@ function DynamicIsland({
           transition={{ duration: 0.2 }}
           style={{ justifyContent: 'flex-start', paddingLeft: '10px' }}
         >
-          <div className="island-thumb-circle" style={{ background: 'rgba(255,255,255,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginRight: '8px' }}>
+          <div className="island-thumb-circle" style={{ background: 'rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginRight: '12px', width: '28px', height: '28px' }}>
             {icon}
           </div>
 
-          <div style={{ display: 'flex', flexDirection: 'column', flex: 1, marginRight: '10px', pointerEvents: 'none' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2px' }}>
-              <span style={{ color: '#fff', fontSize: '11px', fontWeight: '600' }}>Volume</span>
-              <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: '11px' }}>{Math.round(volume)}%</span>
+          <div style={{ display: 'flex', flexDirection: 'column', flex: 1, marginRight: '12px', pointerEvents: 'none', justifyContent: 'center' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+              <span style={{ color: '#fff', fontSize: '12px', fontWeight: '500', letterSpacing: '-0.2px' }}>Volume</span>
+              <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: '12px', fontWeight: '500' }}>{Math.round(volume)}%</span>
             </div>
-            <div style={{ width: '100%', height: '4px', background: 'rgba(255,255,255,0.15)', borderRadius: '2px', overflow: 'hidden' }}>
-              <div style={{ width: `${volume}%`, height: '100%', background: '#fff', borderRadius: '2px' }} />
+            <div style={{ width: '100%', height: '3px', background: 'rgba(255,255,255,0.15)', borderRadius: '1.5px', overflow: 'hidden' }}>
+              <div style={{ width: `${volume}%`, height: '100%', background: '#fff', borderRadius: '1.5px', transition: 'width', transitionDuration: '0.1s' }} />
             </div>
           </div>
         </motion.div>
@@ -413,7 +433,7 @@ function DynamicIsland({
     setShowVolume(true);
     
     setVolume((prev) => {
-      const next = Math.max(0, Math.min(100, prev + (e.deltaY < 0 ? 5 : -5)));
+      const next = Math.max(0, Math.min(100, Math.round(prev) + (e.deltaY < 0 ? 5 : -5)));
       window.electronAPI?.setVolume(next);
       return next;
     });

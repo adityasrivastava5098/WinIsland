@@ -9,6 +9,7 @@ const MonitorManager = require('./monitorManager');
 const MediaManager = require('./mediaManager');
 const CalendarManager = require('./calendarManager');
 const TrayManager = require('./trayManager');
+const startupManager = require('./startupManager');
 const PrivacyManager = require('./privacyManager');
 const ClipboardManager = require('./clipboardManager');
 const VolumeManager = require('./volumeManager');
@@ -69,6 +70,9 @@ function bootstrap() {
   });
 
   volumeManager = new VolumeManager();
+  volumeManager.onVolumeChange((vol) => {
+    monitorManager.broadcastToAll('volume-update', vol);
+  });
 
   // 4. System tray
   trayManager = new TrayManager(app, monitorManager);
